@@ -2,1233 +2,1419 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>슬램덩크 1권 웹 뷰어 | Slam Dunk Vol.1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>cnation TACTICS - 36 BGM Studio</title>
+  <meta name="description" content="1990년대 일본 고전 전략 RPG 감성의 12개 테마 × 3가지 버전 (총 36곡) 순수 Web Audio API 절차적 BGM 생성 및 선택 코드 추출 스튜디오">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg-color: #121316;
-      --card-bg: rgba(26, 28, 34, 0.92);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --accent-color: #e53935;
-      --accent-hover: #ff5252;
-      --text-color: #f1f1f1;
-      --text-dim: #9e9ea7;
-      --header-height: 56px;
-      --footer-height: 64px;
+    body { font-family: 'Noto Sans KR', sans-serif; }
+    .rpg-font { font-family: 'Cinzel', serif; }
+    .mono-font { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #d97706; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(245, 158, 11, 0.2);
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
+    .glow-gold {
+      text-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      overflow: hidden;
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-    }
-
-    /* Top Navigation Bar */
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: var(--header-height);
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      z-index: 100;
-      transition: transform 0.28s ease, opacity 0.28s ease;
-    }
-
-    header.hidden {
-      transform: translateY(-100%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .nav-title-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .book-badge {
-      background: var(--accent-color);
-      color: white;
-      font-weight: 700;
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .book-title {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid transparent;
-      color: var(--text-color);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-      text-decoration: none;
-    }
-
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .btn:active {
-      transform: scale(0.97);
-    }
-
-    .btn-icon {
-      padding: 8px;
-      border-radius: 8px;
-    }
-
-    .btn-active {
-      background: var(--accent-color) !important;
-      color: white !important;
-    }
-
-    /* Main Viewer Viewport */
-    #viewer-viewport {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      touch-action: pan-y pinch-zoom;
-    }
-
-    /* Scroll Mode Viewport */
-    #viewer-viewport.mode-scroll {
-      overflow-y: auto;
-      overflow-x: hidden;
-      display: block;
-      padding: calc(var(--header-height) + 16px) 0 calc(var(--footer-height) + 24px) 0;
-      text-align: center;
-      scroll-behavior: smooth;
-    }
-
-    #viewer-viewport.mode-scroll::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    #viewer-viewport.mode-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-    }
-
-    /* Page Canvas / Display */
-    .page-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-      gap: 12px;
-      transition: transform 0.12s ease-out;
-      transform-origin: center center;
-    }
-
-    .manga-page {
-      max-height: 100%;
-      max-width: 100%;
-      object-fit: contain;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
-      border-radius: 2px;
-      background: #1c1c1c;
-      transition: opacity 0.2s ease;
-    }
-
-    .fit-height .manga-page {
-      height: calc(100vh - 20px);
-      width: auto;
-    }
-
-    .fit-width .manga-page {
-      width: calc(100vw - 20px);
-      height: auto;
-      max-height: none;
-    }
-
-    .mode-scroll .manga-page {
-      display: block;
-      margin: 0 auto 12px auto;
-      max-width: 900px;
-      width: 95%;
-      height: auto;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    }
-
-    /* Clickable Touch Zones for page turning */
-    .nav-zone {
-      position: absolute;
-      top: var(--header-height);
-      bottom: var(--footer-height);
-      width: 32%;
-      z-index: 20;
-      cursor: pointer;
-    }
-
-    .nav-zone-prev { left: 0; }
-    .nav-zone-next { right: 0; }
-    .nav-zone-center {
-      left: 32%;
-      width: 36%;
-      cursor: default;
-    }
-
-    /* Bottom Control Bar */
-    footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: var(--footer-height);
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 100;
-      transition: transform 0.28s ease, opacity 0.28s ease;
-      gap: 16px;
-    }
-
-    footer.hidden {
-      transform: translateY(100%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .footer-left, .footer-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .footer-center {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-grow: 1;
-      max-width: 600px;
-    }
-
-    /* Slider Bar */
-    .slider-container {
-      flex-grow: 1;
-      display: flex;
-      align-items: center;
-      position: relative;
-    }
-
-    .page-slider {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.2);
-      outline: none;
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .page-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--accent-color);
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(229, 57, 53, 0.8);
-      transition: transform 0.1s ease;
-    }
-
-    .page-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.25);
-    }
-
-    .page-counter {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-color);
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .page-input {
-      width: 44px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
-      text-align: center;
-      border-radius: 4px;
-      padding: 3px 0;
-      font-size: 13px;
-    }
-
-    .page-input:focus {
-      border-color: var(--accent-color);
-      outline: none;
-    }
-
-    /* Sidebar / Thumbnail Drawer */
-    #thumb-drawer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 320px;
-      max-width: 85vw;
-      background: #17181c;
-      border-right: 1px solid var(--card-border);
-      z-index: 200;
-      transform: translateX(-100%);
-      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      box-shadow: 8px 0 24px rgba(0, 0, 0, 0.6);
-    }
-
-    #thumb-drawer.open {
-      transform: translateX(0);
-    }
-
-    .drawer-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .drawer-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .drawer-grid {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    .drawer-grid::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .drawer-grid::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-    }
-
-    .thumb-card {
-      background: #202228;
-      border: 2px solid transparent;
-      border-radius: 6px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .thumb-card:hover {
-      border-color: rgba(255, 255, 255, 0.4);
-      transform: translateY(-2px);
-    }
-
-    .thumb-card.active {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 10px rgba(229, 57, 53, 0.5);
-    }
-
-    .thumb-img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      background: #101012;
-    }
-
-    .thumb-label {
-      padding: 6px;
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-
-    /* Overlay backdrop */
-    #backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
-      z-index: 150;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-    }
-
-    #backdrop.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* Loading Spinner */
-    .spinner {
-      position: absolute;
-      width: 44px;
-      height: 44px;
-      border: 4px solid rgba(255, 255, 255, 0.15);
-      border-top-color: var(--accent-color);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Toast Notification */
-    #toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(30, 32, 40, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 13px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      z-index: 300;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    #toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-
-    /* Modal Help Dialog */
-    .modal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.95);
-      background: #1c1d22;
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 24px;
-      max-width: 460px;
-      width: 90vw;
-      z-index: 250;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .modal.open {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    .modal h3 {
-      font-size: 18px;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .shortcut-list {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 10px 14px;
-      font-size: 13px;
-      margin-top: 14px;
-    }
-
-    .key-badge {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      padding: 2px 7px;
-      font-family: monospace;
-      font-weight: 600;
-      color: #ff9800;
-      text-align: center;
-    }
-
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-      .btn-text { display: none; }
-      .book-title { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .nav-zone { width: 25%; }
-      .nav-zone-center { left: 25%; width: 50%; }
-      .footer-left { display: none; }
-      footer { padding: 0 12px; }
+    input[type=range] {
+      accent-color: #f59e0b;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-amber-600 selection:text-white pb-12">
 
-  <!-- Top Header Navigation -->
-  <header id="main-header">
-    <div class="nav-title-group">
-      <button class="btn btn-icon" id="btn-toggle-drawer" title="목차 / 썸네일 (T)">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-      </button>
-      <span class="book-badge">MANGA</span>
-      <h1 class="book-title">슬램덩크 1권</h1>
-    </div>
+  <header class="border-b border-amber-900/30 bg-slate-900/85 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-rose-700 to-indigo-950 flex items-center justify-center shadow-lg border border-amber-500/40 shrink-0">
+          <svg class="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="rpg-font text-base sm:text-xl font-bold tracking-wider text-amber-300 glow-gold">cnation TACTICS</h1>
+            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-amber-950/90 border border-amber-600/40 text-amber-300">36 BGM Studio</span>
+          </div>
+          <p class="text-xs text-slate-400">12개 테마 × 3개 버전 (총 36곡) • 0MB 순수 Web Audio API 실시간 무한 루프</p>
+        </div>
+      </div>
 
-    <div class="nav-actions">
-      <!-- View Mode Buttons -->
-      <button class="btn" id="btn-mode-single" title="단면 보기 (1)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/></svg>
-        <span class="btn-text">단면</span>
-      </button>
-      <button class="btn" id="btn-mode-double" title="양면 펼쳐보기 (2)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg>
-        <span class="btn-text">양면</span>
-      </button>
-      <button class="btn" id="btn-mode-scroll" title="연속 스크롤 (3)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 8l6-5 6 5M6 16l6 5 6-5"/></svg>
-        <span class="btn-text">스크롤</span>
-      </button>
+      <!-- Header Action Controls -->
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-500" id="global-status-dot"></span>
+          <span id="global-status-text" class="text-slate-400 font-medium">대기 중 (Ready)</span>
+        </div>
 
-      <!-- Reading Direction Toggle (Only for Double/Single) -->
-      <button class="btn" id="btn-direction" title="읽기 방향 전환: 우측에서 좌측으로 읽기(원작) / 좌측에서 우측으로">
-        <span id="direction-label">우→좌</span>
-      </button>
+        <button onclick="stopAllPlayback()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition active:scale-95">
+          <svg class="w-3.5 h-3.5 text-rose-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"/></svg>
+          전체 정지
+        </button>
 
-      <!-- Fit Screen Toggle -->
-      <button class="btn btn-icon" id="btn-fit-toggle" title="화면 높이/너비 맞춤 전환">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-      </button>
+        <!-- Direct One-Click index.html Save Button -->
+        <button onclick="downloadSelfHtml()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition active:scale-95" title="구글 드라이브 또는 깃허브 저장용 index.html 파일 저장">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>💾 index.html 다운로드</span>
+        </button>
 
-      <!-- Keyboard Help -->
-      <button class="btn btn-icon" id="btn-help" title="단축키 안내 (?)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
-      </button>
+        <button onclick="openExportModal()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-950 transition active:scale-95">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>선택 12곡 코드 추출 (12/12)</span>
+        </button>
 
-      <!-- Fullscreen Toggle -->
-      <button class="btn btn-icon" id="btn-fullscreen" title="전체화면 (F)">
-        <svg id="fs-icon-enter" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-        <svg id="fs-icon-exit" style="display:none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7"/></svg>
-      </button>
+        <!-- Master Volume Slider -->
+        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+          </svg>
+          <input type="range" id="master-vol" min="0" max="1" step="0.01" value="0.75" class="w-16 sm:w-20 cursor-pointer" title="마스터 볼륨">
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Main Viewport -->
-  <main id="viewer-viewport" class="fit-height">
-    <!-- Click navigation zones (for single/double mode) -->
-    <div class="nav-zone nav-zone-prev" id="zone-prev" title="이전 페이지"></div>
-    <div class="nav-zone nav-zone-center" id="zone-center" title="메뉴 열기/닫기"></div>
-    <div class="nav-zone nav-zone-next" id="zone-next" title="다음 페이지"></div>
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">
 
-    <!-- Active pages rendered here -->
-    <div class="page-container" id="page-container">
-      <!-- Images inserted dynamically -->
+    <!-- Oscilloscope / Visualizer Stage -->
+    <div class="glass-card rounded-2xl p-5 border-amber-900/30 shadow-2xl relative overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <h2 class="text-xs font-bold tracking-widest text-slate-300 uppercase">Live Oscilloscope & Procedural Voice Spectrum</h2>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="text-slate-400">현재 연주 중:</span>
+          <span id="current-track-badge" class="rpg-font text-sm font-bold text-amber-300">선택된 트랙 없음 (대기 중)</span>
+          <span id="current-loop-timer" class="mono-font text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Loop: 00s</span>
+        </div>
+      </div>
+
+      <div class="h-28 sm:h-36 w-full bg-slate-950/90 rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner">
+        <canvas id="visualizer-canvas" class="w-full h-full"></canvas>
+        <div id="canvas-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-xs text-slate-500 tracking-wider pointer-events-none px-4 text-center">
+          <span>각 트랙의 [Ver A], [Ver B], [Ver C] 버튼을 누르면 약 30초 길이의 프로시저럴 BGM이 무한 루프로 연주됩니다.</span>
+          <span class="text-[11px] text-amber-500/80 mt-1">💡 1번, 8번, 11번, 12번 트랙은 같은 중심 메인 라이트모티프(Leitmotif)의 유기적 테마 변주곡입니다.</span>
+        </div>
+      </div>
     </div>
 
-    <div class="spinner" id="loading-spinner" style="display: none;"></div>
+    <!-- Curator Guidance & Category Navigation Filter -->
+    <div class="bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-slate-900/40 border border-amber-700/30 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2 text-amber-300 font-bold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>36곡 절차적 오케스트라 사운드트랙 (12곡 × 3버전) 청음 및 선정 시스템</span>
+        </div>
+        <p class="text-slate-400">
+          각 번호마다 편곡과 악기 구성이 서로 다른 <strong class="text-amber-300">Ver A</strong>, <strong class="text-indigo-300">Ver B</strong>, <strong class="text-emerald-300">Ver C</strong>를 들어보신 후 마음에 드는 버전을 라디오 버튼으로 선택하세요.
+          상단의 <span class="text-amber-400 font-semibold">[선택 12곡 코드 추출]</span>을 누르면 12개 곡 전체의 명세와 게임 프로젝트용 단일 Javascript 엔진 코드가 완성됩니다.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-900/90 px-3.5 py-2 rounded-lg border border-slate-700 shrink-0">
+        <span class="text-[11px] text-slate-400">선택 완료 현황:</span>
+        <span id="selection-counter" class="text-xs font-mono font-bold text-amber-400">12 / 12 곡 준비됨</span>
+      </div>
+    </div>
+
+    <!-- 12 Tracks Container (Each with Version A, B, C) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5" id="tracks-container">
+      <!-- Dynamically generated track cards -->
+    </div>
+
   </main>
 
-  <!-- Bottom Control Bar -->
-  <footer id="main-footer">
-    <div class="footer-left">
-      <button class="btn" id="btn-first" title="첫 페이지 (Home)">처음</button>
-      <button class="btn" id="btn-prev" title="이전 (←)">◀ 이전</button>
-    </div>
-
-    <div class="footer-center">
-      <div class="slider-container">
-        <input type="range" class="page-slider" id="page-slider" min="1" max="118" value="1">
+  <!-- Code Export & Summary Modal -->
+  <div id="export-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-card max-w-4xl w-full rounded-2xl border-amber-500/40 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-bold font-mono">
+            &lt;/&gt;
+          </div>
+          <div>
+            <h3 class="rpg-font text-base font-bold text-amber-300">게임 프로젝트용 Web Audio API 사운드트랙 코드</h3>
+            <p class="text-xs text-slate-400">선택하신 12개 테마(A/B/C 버전 채택 반영)의 제목, 분위기 명세 및 단일 실행 클래스 코드</p>
+          </div>
+        </div>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
-      <div class="page-counter">
-        <input type="number" class="page-input" id="page-input" min="1" max="118" value="1">
-        <span>/ <span id="total-page-count">118</span></span>
+
+      <div class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-4">
+        <!-- Selected Summary Table -->
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+          <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <span>📋 최종 선택된 12개 사운드트랙 명세 요약</span>
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="modal-summary-grid">
+            <!-- Dynamically populated selected track summary -->
+          </div>
+        </div>
+
+        <!-- Code Block -->
+        <div class="relative">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1 px-1">
+            <span>Vanilla JavaScript Web Audio API 클래스 (`TacticsSoundtrackEngine.js`):</span>
+            <span class="text-amber-400 font-mono">외부 MP3 에셋 0MB (Zero Asset)</span>
+          </div>
+          <pre class="bg-slate-950 p-4 rounded-xl text-xs text-amber-100 font-mono overflow-x-auto border border-slate-800 h-80 sm:h-96 leading-relaxed select-all" id="code-snippet-pre"></pre>
+        </div>
       </div>
-    </div>
 
-    <div class="footer-right">
-      <button class="btn" id="btn-next" title="다음 (→)">다음 ▶</button>
-      <button class="btn" id="btn-last" title="마지막 페이지 (End)">끝</button>
-    </div>
-  </footer>
-
-  <!-- Thumbnail Sidebar Drawer -->
-  <div id="backdrop"></div>
-  <aside id="thumb-drawer">
-    <div class="drawer-header">
-      <div class="drawer-title">페이지 목록 (총 118쪽)</div>
-      <button class="btn btn-icon" id="btn-close-drawer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="drawer-grid" id="drawer-grid">
-      <!-- Thumbnails populated here -->
-    </div>
-  </aside>
-
-  <!-- Help / Shortcut Modal -->
-  <div class="modal" id="help-modal">
-    <h3>
-      <span>단축키 안내</span>
-      <button class="btn btn-icon" id="btn-close-modal">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </h3>
-    <div class="shortcut-list">
-      <div><span class="key-badge">←</span> / <span class="key-badge">→</span></div>
-      <div>이전 / 다음 페이지 이동</div>
-
-      <div><span class="key-badge">A</span> / <span class="key-badge">D</span></div>
-      <div>이전 / 다음 페이지 이동</div>
-
-      <div><span class="key-badge">Space</span></div>
-      <div>다음 페이지로 이동 (Shift+Space: 이전)</div>
-
-      <div><span class="key-badge">1</span> / <span class="key-badge">2</span> / <span class="key-badge">3</span></div>
-      <div>단면 / 양면 / 연속 스크롤 모드 전환</div>
-
-      <div><span class="key-badge">F</span></div>
-      <div>전체화면 켜기 / 끄기</div>
-
-      <div><span class="key-badge">T</span> / <span class="key-badge">M</span></div>
-      <div>목차 / 썸네일 서랍 열기/닫기</div>
-
-      <div><span class="key-badge">H</span></div>
-      <div>상/하단 툴바 숨기기 / 보이기</div>
-
-      <div><span class="key-badge">Home</span> / <span class="key-badge">End</span></div>
-      <div>첫 페이지 / 마지막 페이지 즉시 이동</div>
+      <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-900/80 flex-wrap gap-2">
+        <span class="text-xs text-slate-400">💡 코드 복사 후 게임 초기화 스크립트에 바로 붙여넣어 실행할 수 있습니다.</span>
+        <div class="flex items-center gap-2">
+          <button onclick="closeExportModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition">닫기</button>
+          <button onclick="copyGeneratedCode()" id="btn-copy-code" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-xs text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-amber-950 active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            <span id="copy-btn-text">코드 및 명세 클립보드 복사</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Toast Notification element -->
-  <div id="toast"></div>
+  <!-- Custom Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/40 text-amber-200 px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2 translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg">알림 메시지</span>
+  </div>
 
-  <!-- Viewer Application Script -->
   <script>
-    // 118 Pages Dataset with Google Drive IDs and Resource Keys
-    const PAGES_DATA = [{"page": 1, "title": "Slam Dunk 01_001.jpg", "id": "0B_Fq1xsSZuWIUTAzWldYOFZsWFE", "rk": "0-c0q7a7i7Dl__5K5L2tjndg"}, {"page": 2, "title": "Slam Dunk 01_002.jpg", "id": "0B_Fq1xsSZuWIRVdGblJIeUJDenc", "rk": "0-5r_jNRKgATxG5hTHQIOnYA"}, {"page": 3, "title": "Slam Dunk 01_003.jpg", "id": "0B_Fq1xsSZuWIVkxucFljbjlqc2c", "rk": "0-mYr3D1wrZa8KjfAsCc3OkA"}, {"page": 4, "title": "Slam Dunk 01_004.jpg", "id": "0B_Fq1xsSZuWIX3hZM1VhZWEtZlU", "rk": "0-0jSwOxwtzwU31lPOuaHu3w"}, {"page": 5, "title": "Slam Dunk 01_005.jpg", "id": "0B_Fq1xsSZuWIV3Vibk9BbXdPdWM", "rk": "0-4cJX2dsLa-I9EM47AFdlAw"}, {"page": 6, "title": "Slam Dunk 01_006.jpg", "id": "0B_Fq1xsSZuWIYmRROHdSalh0Tmc", "rk": "0-GRH8ZAeHEnz8Mc3pux-pfg"}, {"page": 7, "title": "Slam Dunk 01_007.jpg", "id": "0B_Fq1xsSZuWIX0tWdWkwNk9HYW8", "rk": "0-Pv6SxyfD8TzTh4SfmtNfyA"}, {"page": 8, "title": "Slam Dunk 01_008.jpg", "id": "0B_Fq1xsSZuWISXFQWVlHN1c5T0U", "rk": "0-waZamzxdnYyiBCYUpc7Faw"}, {"page": 9, "title": "Slam Dunk 01_009.jpg", "id": "0B_Fq1xsSZuWIaF82MmQtSEpoanM", "rk": "0-6niJ7yk0IZ6nCw7xlnx8Sw"}, {"page": 10, "title": "Slam Dunk 01_010.jpg", "id": "0B_Fq1xsSZuWIbEI1ZjBsZElWQk0", "rk": "0-fzOmn8grstrQiu_PKJ-C_Q"}, {"page": 11, "title": "Slam Dunk 01_011.jpg", "id": "0B_Fq1xsSZuWIZ1FXdmRsUmROLXM", "rk": "0-F9EPFImTN092icVUlEOqCg"}, {"page": 12, "title": "Slam Dunk 01_012.jpg", "id": "0B_Fq1xsSZuWIUnJ0dHRxbTh0R2s", "rk": "0--nNkGi0dOTGQxlm4hzCwUQ"}, {"page": 13, "title": "Slam Dunk 01_013.jpg", "id": "0B_Fq1xsSZuWId1AwZzVSUUtJa1k", "rk": "0--427-Eo3OOh2eebKzTqGAg"}, {"page": 14, "title": "Slam Dunk 01_014.jpg", "id": "0B_Fq1xsSZuWIYzNYandBMVRWTFE", "rk": "0-5zIiGEFN1bMgGUcMO4X71g"}, {"page": 15, "title": "Slam Dunk 01_015.jpg", "id": "0B_Fq1xsSZuWIVTBKT1pkQ0U3bkU", "rk": "0-C6RV8zWDzzPLzlgVZhpcTA"}, {"page": 16, "title": "Slam Dunk 01_016.jpg", "id": "0B_Fq1xsSZuWIQXoxbGZueUNHYnc", "rk": "0-3GnspFNMUQxZp0bcKWKj0Q"}, {"page": 17, "title": "Slam Dunk 01_017.jpg", "id": "0B_Fq1xsSZuWIWWUwY1N4OTRYNGc", "rk": "0-khJyn8Iegqc1qg9s-CmgKg"}, {"page": 18, "title": "Slam Dunk 01_018.jpg", "id": "0B_Fq1xsSZuWIZzJiSEVCZXR4TVk", "rk": "0-UqksWxOgL8ivLRDR-jLmpA"}, {"page": 19, "title": "Slam Dunk 01_019.jpg", "id": "0B_Fq1xsSZuWIMjJMN1BQRktYR2c", "rk": "0-RQjKTtt_CjaWk93yDZu5dQ"}, {"page": 20, "title": "Slam Dunk 01_020.jpg", "id": "0B_Fq1xsSZuWIVGxaOW1nZEZHWEU", "rk": "0-klfQ4Ie6DPbV4AjBMqULYA"}, {"page": 21, "title": "Slam Dunk 01_021.jpg", "id": "0B_Fq1xsSZuWIUHoyTG41OGxaREU", "rk": "0-Ox9CGG9FGHOrXNlbI-o03g"}, {"page": 22, "title": "Slam Dunk 01_022.jpg", "id": "0B_Fq1xsSZuWITGNQaFlkYzBjT3M", "rk": "0-5_GD7TNEotSIhmd55iBSzg"}, {"page": 23, "title": "Slam Dunk 01_023.jpg", "id": "0B_Fq1xsSZuWIeWJyLWViQmNPSU0", "rk": "0-e2Mqno0pH9TnZY6L8eygrw"}, {"page": 24, "title": "Slam Dunk 01_024.jpg", "id": "0B_Fq1xsSZuWIR1dzTmJCQ2ozQUE", "rk": "0-1qt-MCWyrvQt92KXUnLvjQ"}, {"page": 25, "title": "Slam Dunk 01_025.jpg", "id": "0B_Fq1xsSZuWIRmNQaHc1bjN6YW8", "rk": "0-RQ3GMC24krgcl08AyQ7BNQ"}, {"page": 26, "title": "Slam Dunk 01_026.jpg", "id": "0B_Fq1xsSZuWILVU2ZjNqbFhZQk0", "rk": "0-QzHyYfaiiTT-l2Yy0nNOrQ"}, {"page": 27, "title": "Slam Dunk 01_027.jpg", "id": "0B_Fq1xsSZuWITFRxeC11TWxIclU", "rk": "0-rkArSu2_XqbrNH4nRnojMw"}, {"page": 28, "title": "Slam Dunk 01_028.jpg", "id": "0B_Fq1xsSZuWIdGNJQmpzUVdhVm8", "rk": "0-PDsI5Ie565U8KXsql_pptw"}, {"page": 29, "title": "Slam Dunk 01_029.jpg", "id": "0B_Fq1xsSZuWILXF1cnpYNzBHTkU", "rk": "0-_w3c1r1vZSpuGgI6WwLwZA"}, {"page": 30, "title": "Slam Dunk 01_030.jpg", "id": "0B_Fq1xsSZuWIaTZ3OE95bW42clU", "rk": "0-3BFIdj3XONYBCDI-Tq_YLA"}, {"page": 31, "title": "Slam Dunk 01_031.jpg", "id": "0B_Fq1xsSZuWIVENqSFZTNTJkclU", "rk": "0-KpNP-qNLHzwtcpQk0iNXSQ"}, {"page": 32, "title": "Slam Dunk 01_032.jpg", "id": "0B_Fq1xsSZuWIZkxRMjh6ejVFMjg", "rk": "0-4J8MzQlLLzR12218ipfSTA"}, {"page": 33, "title": "Slam Dunk 01_033.jpg", "id": "0B_Fq1xsSZuWITGhiMk1wY2xxd1k", "rk": "0-5cXt9bGVV_fFIbmPo19N3w"}, {"page": 34, "title": "Slam Dunk 01_034.jpg", "id": "0B_Fq1xsSZuWIa0lsaklOb0hqMXM", "rk": "0-sw5KXXqGxTkKQj9eU6r0Zg"}, {"page": 35, "title": "Slam Dunk 01_035.jpg", "id": "0B_Fq1xsSZuWILVFEY3hFcHlhU00", "rk": "0-2ouZAY7vhM9uW10swXlrTA"}, {"page": 36, "title": "Slam Dunk 01_036.jpg", "id": "0B_Fq1xsSZuWId1pRbHROc1daNG8", "rk": "0-bzL6qXeiPOlQT5dMYV30JQ"}, {"page": 37, "title": "Slam Dunk 01_037.jpg", "id": "0B_Fq1xsSZuWIb0VmbVdoUkgwamM", "rk": "0-B6Uce364hFTAXSV4Guqsrw"}, {"page": 38, "title": "Slam Dunk 01_038.jpg", "id": "0B_Fq1xsSZuWIampYbWVoVzFsbzg", "rk": "0-BbXxlAVe4mpdxcCTbGh1RQ"}, {"page": 39, "title": "Slam Dunk 01_039.jpg", "id": "0B_Fq1xsSZuWISjB3Q2N1UlMtQTQ", "rk": "0-pk8HRx0zKOp5BvrUXffxHw"}, {"page": 40, "title": "Slam Dunk 01_040.jpg", "id": "0B_Fq1xsSZuWILTdYX2kzS19tUzQ", "rk": "0-ThURi1CaC2Yvy1TIZMVo6g"}, {"page": 41, "title": "Slam Dunk 01_041.jpg", "id": "0B_Fq1xsSZuWIQl8xTXZWeEFZSzg", "rk": "0-PY-VmdR2GEa_vZnXEpoqdA"}, {"page": 42, "title": "Slam Dunk 01_042.jpg", "id": "0B_Fq1xsSZuWIQV96S09jWkNmUU0", "rk": "0-gmLJvh38HLodkcMw-g__Ig"}, {"page": 43, "title": "Slam Dunk 01_043.jpg", "id": "0B_Fq1xsSZuWIWUxfRkVkR3lTNnc", "rk": "0-6TE_2NPQkTrI94_bP6y7CA"}, {"page": 44, "title": "Slam Dunk 01_044.jpg", "id": "0B_Fq1xsSZuWIbTRVczdsbDFFLVU", "rk": "0-9to71PmMlI4rzx-aTO1F_g"}, {"page": 45, "title": "Slam Dunk 01_045.jpg", "id": "0B_Fq1xsSZuWIZXlsLW8wNV9NWDg", "rk": "0-9h6zycKjh7YumyBkM1SZrw"}, {"page": 46, "title": "Slam Dunk 01_046.jpg", "id": "0B_Fq1xsSZuWIcEp2THFMR3BRc2s", "rk": "0-SLvz-fwnE49VdvzDSvbvlg"}, {"page": 47, "title": "Slam Dunk 01_047.jpg", "id": "0B_Fq1xsSZuWIX1BVeGlteFJfWVU", "rk": "0-v8eHgFIAOZQzZ3su-CGsjQ"}, {"page": 48, "title": "Slam Dunk 01_048.jpg", "id": "0B_Fq1xsSZuWIbjZCdE94NUhCMTA", "rk": "0-bDJo88KVwSsbwxOTx0n0eA"}, {"page": 49, "title": "Slam Dunk 01_049.jpg", "id": "0B_Fq1xsSZuWIaXcwUkNNTnBnczg", "rk": "0-1oFV7cJp7ZL9ijM6vxdW-w"}, {"page": 50, "title": "Slam Dunk 01_050.jpg", "id": "0B_Fq1xsSZuWIWlBwQzdVRDNSWW8", "rk": "0-WTJHpUyyfsgkaLZe4onh-g"}, {"page": 51, "title": "Slam Dunk 01_051.jpg", "id": "0B_Fq1xsSZuWIVEZZVlNGblZoZUk", "rk": "0-zKVXRsoR3kpfRr6j3PduUg"}, {"page": 52, "title": "Slam Dunk 01_052.jpg", "id": "0B_Fq1xsSZuWIVTdjd2ZxTU5CTUk", "rk": "0-qiIMRzDKTT36NTZIMz0qDw"}, {"page": 53, "title": "Slam Dunk 01_053.jpg", "id": "0B_Fq1xsSZuWIU0ZSZjJuVlNqb0U", "rk": "0-sl6XtOHcJvxAe0AV4xlVQg"}, {"page": 54, "title": "Slam Dunk 01_054.jpg", "id": "0B_Fq1xsSZuWIWGFtdVdKd0ZxUG8", "rk": "0-TkosALRyE8TQQjPz_AerPA"}, {"page": 55, "title": "Slam Dunk 01_055.jpg", "id": "0B_Fq1xsSZuWISzJfa2NBaUh1WDQ", "rk": "0-Swq6MA9Dd9ei4p-b6T7bqw"}, {"page": 56, "title": "Slam Dunk 01_056.jpg", "id": "0B_Fq1xsSZuWIU3N3dGpKdFNEaVE", "rk": "0-qRJnWiI1QG6Rnw0H0odNig"}, {"page": 57, "title": "Slam Dunk 01_057.jpg", "id": "0B_Fq1xsSZuWISFpYck1SX0JGQXM", "rk": "0-3TMa0vJNRPG0vtUnO3WB9A"}, {"page": 58, "title": "Slam Dunk 01_058.jpg", "id": "0B_Fq1xsSZuWIdVd6NlRsOHFPMUU", "rk": "0-qb4U3CzrIh0be6Vem7nhng"}, {"page": 59, "title": "Slam Dunk 01_059.jpg", "id": "0B_Fq1xsSZuWINEYxUk9LcmI1TE0", "rk": "0-6wbg5LZz5ucE6NG04C_WnA"}, {"page": 60, "title": "Slam Dunk 01_060.jpg", "id": "0B_Fq1xsSZuWIN196QmRVUHJEYU0", "rk": "0-2liZHOvw0BqOEmQPsOLmRA"}, {"page": 61, "title": "Slam Dunk 01_061.jpg", "id": "0B_Fq1xsSZuWISFBIdjdiZFYxbGc", "rk": "0-R3ZXJZkJx7G6FlNF7Z3WBw"}, {"page": 62, "title": "Slam Dunk 01_062.jpg", "id": "0B_Fq1xsSZuWId19ka3l6M0xISWc", "rk": "0-z1zdB-Ox7mCr1hsYUWM4ag"}, {"page": 63, "title": "Slam Dunk 01_063.jpg", "id": "0B_Fq1xsSZuWIalFPNzdFbkhwUTA", "rk": "0-irR-IMX0wx8A3Qq-xQkrXw"}, {"page": 64, "title": "Slam Dunk 01_064.jpg", "id": "0B_Fq1xsSZuWIQUZYeDdRU0VhaFk", "rk": "0-wSsb8y-_H4fuP5Np5baSPA"}, {"page": 65, "title": "Slam Dunk 01_065.jpg", "id": "0B_Fq1xsSZuWIUm5vRl9iZGRDQXM", "rk": "0-ylKJZD7YHa8B6OGKfMFbBw"}, {"page": 66, "title": "Slam Dunk 01_066.jpg", "id": "0B_Fq1xsSZuWINVgySkM2YVZ6ZlE", "rk": "0-50JgSLAaWrrRnrWtypWI5w"}, {"page": 67, "title": "Slam Dunk 01_067.jpg", "id": "0B_Fq1xsSZuWIQ2Q0QjNLUGhqeHc", "rk": "0-7lxmD5Atzj-TWj-S2eIZ-g"}, {"page": 68, "title": "Slam Dunk 01_068.jpg", "id": "0B_Fq1xsSZuWIVUoyeEJwbXNqME0", "rk": "0-N9gdR9a_UJYh642sa1rmaA"}, {"page": 69, "title": "Slam Dunk 01_069.jpg", "id": "0B_Fq1xsSZuWIenJ5Rzk3LWVwY0E", "rk": "0-shbmR3UDzLJCvXXW7ffkDQ"}, {"page": 70, "title": "Slam Dunk 01_070.jpg", "id": "0B_Fq1xsSZuWIYzd6T1R5VlNFWVU", "rk": "0-SyRfBXO430JU8RneexkHnQ"}, {"page": 71, "title": "Slam Dunk 01_071.jpg", "id": "0B_Fq1xsSZuWIVzRnWGo0LWQyNFU", "rk": "0-GgWnFr4H6VNma60GVuqndA"}, {"page": 72, "title": "Slam Dunk 01_072.jpg", "id": "0B_Fq1xsSZuWIWS1nLVRCRkF3RWM", "rk": "0-mVZbIsJJvaq8FleiiYbxjw"}, {"page": 73, "title": "Slam Dunk 01_073.jpg", "id": "0B_Fq1xsSZuWIcjE4S0pHY2dxeEU", "rk": "0-cKrGOaT6KxFeNGFejjegjg"}, {"page": 74, "title": "Slam Dunk 01_074.jpg", "id": "0B_Fq1xsSZuWIbjFNMUROTEF4ZzQ", "rk": "0-_yg49h635srLeXPkqX6XpA"}, {"page": 75, "title": "Slam Dunk 01_075.jpg", "id": "0B_Fq1xsSZuWIUmEtekQ1Sm1EZk0", "rk": "0-yyynHKJVnLFnsBwc6XScnw"}, {"page": 76, "title": "Slam Dunk 01_076.jpg", "id": "0B_Fq1xsSZuWIVHhQRWI1ZFZ1YWs", "rk": "0-djPAHU8fj5JSRGuH8o-6kw"}, {"page": 77, "title": "Slam Dunk 01_077.jpg", "id": "0B_Fq1xsSZuWIbGxyQV90MGl5V1k", "rk": "0-GplhMigat_WNaIL08789Mw"}, {"page": 78, "title": "Slam Dunk 01_078.jpg", "id": "0B_Fq1xsSZuWIZnoyZDhoMXBaYlE", "rk": "0-ffzZltbiFlb5svF_XNtcqQ"}, {"page": 79, "title": "Slam Dunk 01_079.jpg", "id": "0B_Fq1xsSZuWIV2pjS3VsbGNLelU", "rk": "0-YhSRGNAhHrfJxX4PXdOpRg"}, {"page": 80, "title": "Slam Dunk 01_080.jpg", "id": "0B_Fq1xsSZuWISmRUOU83b3NRN1E", "rk": "0-vAPmZ6eEFFCrsWl5XimuLQ"}, {"page": 81, "title": "Slam Dunk 01_081.jpg", "id": "0B_Fq1xsSZuWINTV6c3hxeVNlMlE", "rk": "0-kOTX8lDIiZE0LD6RwVRtAQ"}, {"page": 82, "title": "Slam Dunk 01_082.jpg", "id": "0B_Fq1xsSZuWIaUxSXzdUcGk0U1k", "rk": "0-eIbDTqgerabbrv6Q2ngDVQ"}, {"page": 83, "title": "Slam Dunk 01_083.jpg", "id": "0B_Fq1xsSZuWIUUhOb2lEUkxpUk0", "rk": "0-ZVebZ0vwhfGtB28KFC7fUg"}, {"page": 84, "title": "Slam Dunk 01_084.jpg", "id": "0B_Fq1xsSZuWIZDZaSkhQMzVKR0k", "rk": "0-6o5f1ZrG-6s_yJKJFddQJA"}, {"page": 85, "title": "Slam Dunk 01_085.jpg", "id": "0B_Fq1xsSZuWIbVMtb1NkTVNXVnc", "rk": "0-uMaPH7LljvBnwv_a-eB4Rw"}, {"page": 86, "title": "Slam Dunk 01_086.jpg", "id": "0B_Fq1xsSZuWIcTRlVl9pYnNVY2s", "rk": "0-55VCVWq9lLwta5HCzBHjZg"}, {"page": 87, "title": "Slam Dunk 01_087.jpg", "id": "0B_Fq1xsSZuWIdGx5Y25YZ0dXR28", "rk": "0-Rh6_X9g6yft9AgvfM-4ZbA"}, {"page": 88, "title": "Slam Dunk 01_088.jpg", "id": "0B_Fq1xsSZuWIOWZxbEVjSGl5Njg", "rk": "0-Ue3a7Lq-kRe2p0XoAhescg"}, {"page": 89, "title": "Slam Dunk 01_089.jpg", "id": "0B_Fq1xsSZuWIdUNaRmpWQzNjUzA", "rk": "0-Tj2VG0tltzElQGBnIaGiqQ"}, {"page": 90, "title": "Slam Dunk 01_090.jpg", "id": "0B_Fq1xsSZuWIeTA2SW8zMUNwVzg", "rk": "0-fkdDQOma4vUYQHzwZafXXQ"}, {"page": 91, "title": "Slam Dunk 01_091.jpg", "id": "0B_Fq1xsSZuWIaXF4anlQc1pOaGs", "rk": "0-MuOiMI05LbZacZ0VrpLvZw"}, {"page": 92, "title": "Slam Dunk 01_092.jpg", "id": "0B_Fq1xsSZuWIcTB1aWZHSUl0UTA", "rk": "0-BiMhejP0gPPfzGGNzlJn-A"}, {"page": 93, "title": "Slam Dunk 01_093.jpg", "id": "0B_Fq1xsSZuWIQ3RfMUtFODE0MXc", "rk": "0--QgHcLRl1cu9NrK1p-DnbA"}, {"page": 94, "title": "Slam Dunk 01_094.jpg", "id": "0B_Fq1xsSZuWIZTduOHZlV0tpSnM", "rk": "0-g8srt-6kNHF_7YlRpgcHsg"}, {"page": 95, "title": "Slam Dunk 01_095.jpg", "id": "0B_Fq1xsSZuWIYmpIa2JzTnY0aUk", "rk": "0-2K7egXkYrJF3V-pS9_7akQ"}, {"page": 96, "title": "Slam Dunk 01_096.jpg", "id": "0B_Fq1xsSZuWIRHJ2enlQWHJ5c1E", "rk": "0-wNFnwj9WQLn55RKRzAVsDw"}, {"page": 97, "title": "Slam Dunk 01_097.jpg", "id": "0B_Fq1xsSZuWIZG9HdnBfRlFfd1E", "rk": "0-PSNj20xPDjI2MDvWASeeDA"}, {"page": 98, "title": "Slam Dunk 01_098.jpg", "id": "0B_Fq1xsSZuWIUlZ2OTI3V0VTWVk", "rk": "0-8DyYHTF4sPJTPdDPKilkCw"}, {"page": 99, "title": "Slam Dunk 01_099.jpg", "id": "0B_Fq1xsSZuWIRm5rek5aaTMxazA", "rk": "0-zo7Rshif79HCaPmlNBU2Kw"}, {"page": 100, "title": "Slam Dunk 01_100.jpg", "id": "0B_Fq1xsSZuWIbTlqbmRyeXlfS28", "rk": "0-yYNWy4Ta9eX2pleQ2VWxCQ"}, {"page": 101, "title": "Slam Dunk 01_101.jpg", "id": "0B_Fq1xsSZuWIYTlUY3p4T1ZSemc", "rk": "0-cVhdNL-8rc8RaGVeommGvg"}, {"page": 102, "title": "Slam Dunk 01_102.jpg", "id": "0B_Fq1xsSZuWIdVBBaTV5VkZVemc", "rk": "0-2HWPfcfqpMnghTyklKdqsw"}, {"page": 103, "title": "Slam Dunk 01_103.jpg", "id": "0B_Fq1xsSZuWIdW1BUHQtbmRIZlE", "rk": "0-K4TOekM9eC0SOD7SsmQiiw"}, {"page": 104, "title": "Slam Dunk 01_104.jpg", "id": "0B_Fq1xsSZuWIXzl4bHNrNjhwZEE", "rk": "0-uvywRs3AjAE058rDe8bnfA"}, {"page": 105, "title": "Slam Dunk 01_105.jpg", "id": "0B_Fq1xsSZuWIRDFVbGNrVVp0Smc", "rk": "0-nd0A74GoG3JZK7tLnmnU7g"}, {"page": 106, "title": "Slam Dunk 01_106.jpg", "id": "0B_Fq1xsSZuWIMFd4ekhUbFJERFE", "rk": "0-aOJNnv6KWI2BVTF4Wt5_eg"}, {"page": 107, "title": "Slam Dunk 01_107.jpg", "id": "0B_Fq1xsSZuWIVVhsbXl5SzFnaEk", "rk": "0-TjeH-Ak0DQ_RMGvunudehQ"}, {"page": 108, "title": "Slam Dunk 01_108.jpg", "id": "0B_Fq1xsSZuWIZHN4MUZFWks1LVU", "rk": "0-3yfLPsNWk7Y7SIhg9_SYtQ"}, {"page": 109, "title": "Slam Dunk 01_109.jpg", "id": "0B_Fq1xsSZuWIWlVlVnZIckdrbGs", "rk": "0-CvEZqt1DqUHsY5K_uVnnXA"}, {"page": 110, "title": "Slam Dunk 01_110.jpg", "id": "0B_Fq1xsSZuWIU094SGFub0s4eEE", "rk": "0-xZqvrVpnsTngWaoRVwy0Pw"}, {"page": 111, "title": "Slam Dunk 01_111.jpg", "id": "0B_Fq1xsSZuWIbENKeFlFNkxGXzQ", "rk": "0-C8OoP6qnEweqxIOV4Lbzhg"}, {"page": 112, "title": "Slam Dunk 01_112.jpg", "id": "0B_Fq1xsSZuWIaFVHUmJTMkJ5UUE", "rk": "0-JNApg_NCRq01MlRIrj5TDA"}, {"page": 113, "title": "Slam Dunk 01_113.jpg", "id": "0B_Fq1xsSZuWIRmxTNHl1YnJFZ00", "rk": "0-OUn-bdPxwkW_IrsIxl3W1Q"}, {"page": 114, "title": "Slam Dunk 01_114.jpg", "id": "0B_Fq1xsSZuWIQndPaVN1MjFtNlU", "rk": "0-GyUHrbZWyUHh8zLU5urTOA"}, {"page": 115, "title": "Slam Dunk 01_115.jpg", "id": "0B_Fq1xsSZuWIYVhNRlkxSmltVDA", "rk": "0-ZccWar9XyHrH2Zw48DmOyg"}, {"page": 116, "title": "Slam Dunk 01_116.jpg", "id": "0B_Fq1xsSZuWIaUhGVW5DUXg2Q2c", "rk": "0-j-V8xftQY9HCdApGrTKQJw"}, {"page": 117, "title": "Slam Dunk 01_117.jpg", "id": "0B_Fq1xsSZuWIODJfRzY4UHpqVW8", "rk": "0-NQ5ctYQLRq9-86ap2pqjVg"}, {"page": 118, "title": "Slam Dunk 01_118.jpg", "id": "0B_Fq1xsSZuWIQm9JY2lpdGFYYVE", "rk": "0-PoC3tBGW765uBmXo56XnKw"}];
-
-    // State Variables
-    let currentPage = parseInt(localStorage.getItem('slamdunk_page') || '1', 10);
-    if (currentPage < 1 || currentPage > PAGES_DATA.length) currentPage = 1;
-
-    let viewMode = localStorage.getItem('slamdunk_view_mode') || 'double'; // 'single', 'double', 'scroll'
-    let readingDirection = localStorage.getItem('slamdunk_direction') || 'rtl'; // 'rtl' (우->좌 만화 원작), 'ltr' (좌->우)
-    let fitMode = localStorage.getItem('slamdunk_fit_mode') || 'height'; // 'height', 'width'
-    let isToolbarVisible = true;
-    let isDrawerOpen = false;
-
-    // DOM Elements
-    const header = document.getElementById('main-header');
-    const footer = document.getElementById('main-footer');
-    const viewport = document.getElementById('viewer-viewport');
-    const pageContainer = document.getElementById('page-container');
-    const pageSlider = document.getElementById('page-slider');
-    const pageInput = document.getElementById('page-input');
-    const totalCountSpan = document.getElementById('total-page-count');
-    const thumbDrawer = document.getElementById('thumb-drawer');
-    const drawerGrid = document.getElementById('drawer-grid');
-    const backdrop = document.getElementById('backdrop');
-    const spinner = document.getElementById('loading-spinner');
-    const toast = document.getElementById('toast');
-    const helpModal = document.getElementById('help-modal');
-
-    const btnModeSingle = document.getElementById('btn-mode-single');
-    const btnModeDouble = document.getElementById('btn-mode-double');
-    const btnModeScroll = document.getElementById('btn-mode-scroll');
-    const btnDirection = document.getElementById('btn-direction');
-    const directionLabel = document.getElementById('direction-label');
-    const btnFitToggle = document.getElementById('btn-fit-toggle');
-
-    // Build Image URLs with fallback options
-    function getImageUrl(id, rk, quality = 'high') {
-      const sizeParam = quality === 'thumb' ? 'w300' : 'w1920';
-      const rkParam = rk ? `&resourcekey=${rk}` : '';
-      return `https://drive.google.com/thumbnail?id=${id}&sz=${sizeParam}${rkParam}`;
-    }
-
-    function getFallbackUrl(id, rk) {
-      const rkParam = rk ? `?resourcekey=${rk}` : '';
-      return `https://lh3.googleusercontent.com/d/${id}${rkParam}`;
-    }
-
-    function showToast(msg, duration = 1800) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(toast._timer);
-      toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
-    }
-
-    // Preload adjacent images
-    function preloadPage(pageNum) {
-      if (pageNum >= 1 && pageNum <= PAGES_DATA.length) {
-        const item = PAGES_DATA[pageNum - 1];
-        const img = new Image();
-        img.src = getImageUrl(item.id, item.rk);
+    /* 12 Track Metadata Definition with 3 Distinct Variations Each (A, B, C) */
+    const TRACK_METADATA = [
+      {
+        id: 1,
+        title: "Echoes of Arca",
+        role: "Main Title Theme",
+        mood: "희망, 운명, 새로운 여행의 시작, 비터스위트",
+        scale: "D Major / Minor (Core Leitmotif)",
+        leitmotif: true,
+        bpmA: 72,
+        descA: "플루트와 솔로 피아노로 중심 멜로디를 소개하고, 따뜻한 현악 패드와 프렌치 호른이 합류하는 서정적 영웅 서사.",
+        bpmB: 68,
+        descB: "어쿠스틱 기타 아르페지오와 애절한 목관, 부드러운 바이올린 비브라토가 이끄는 고독하지만 따스한 모험의 서막.",
+        bpmC: 76,
+        descC: "당당한 하프시코드와 금관 앙상블, 팀파니 심장박동이 어우러져 고전 SRPG 명작의 웅장한 전설을 알리는 클래식 편곡."
+      },
+      {
+        id: 2,
+        title: "Roads Beyond the Kingdom",
+        role: "World Map Theme",
+        mood: "여행, 탐험, 미지의 대륙에 대한 기대감",
+        scale: "G Major (Adventure Folk)",
+        leitmotif: false,
+        bpmA: 104,
+        descA: "어쿠스틱 기타 핑거피킹과 맑은 플루트, 행진풍의 정갈한 스네어가 펼쳐진 미지의 지도 위를 걷는 경쾌한 행진.",
+        bpmB: 98,
+        descB: "피치카토 현악과 클라리넷, 따뜻한 호른 액센트가 지도를 펼쳐놓고 행선지를 고르는 설렘을 표현하는 아기자기한 여행길.",
+        bpmC: 110,
+        descC: "켈틱 풍의 활기찬 휘슬과 류트 플럭, 빠른 16비트 퍼커션 롤이 광활한 평원과 고대 유적으로의 쾌속 전진을 묘사."
+      },
+      {
+        id: 3,
+        title: "A Quiet Day in Town",
+        role: "Town Theme",
+        mood: "평화로운 마을, 휴식, 일상, 따뜻함",
+        scale: "C Major / Rustic Folk",
+        leitmotif: false,
+        bpmA: 84,
+        descA: "따뜻한 류트 플럭과 목관 플루트, 어쿠스틱 베이스의 평화로운 선술집 대화와 대장간의 안전한 안식처.",
+        bpmB: 78,
+        descB: "만돌린과 피치카토 바이올린, 나일론 기타의 유럽 중세 풍 시골 시장 풍경. 긴장감 없는 아늑한 휴식.",
+        bpmC: 88,
+        descC: "오르골(Music Box) 벨 텍스처와 따뜻한 현악 패드, 저음 바순이 빚어내는 별빛 가득한 시골 여관의 평온한 밤."
+      },
+      {
+        id: 4,
+        title: "Blades of the Young",
+        role: "Battle Theme 1 (Early Encounters)",
+        mood: "초반 전투, 젊은 모험가들의 패기, 경쾌함",
+        scale: "A Minor / Dorian (Forward Momentum)",
+        leitmotif: false,
+        bpmA: 130,
+        descA: "빠른 현악 오스티나토와 마칭 스네어, 당당한 브라스 팡파르가 이끄는 밝고 희망찬 초반 몬스터 교전.",
+        bpmB: 126,
+        descB: "정갈한 스네어 드럼과 호른 리프, 역동적인 바이올린 합주가 젊은 기사단의 당찬 첫 출진을 알리는 경쾌한 전투.",
+        bpmC: 134,
+        descC: "질주하는 16분음표 베이스와 민첩한 플루트 스타카토, 타격감 넘치는 팀파니가 맞물린 속도감 중심의 전초전."
+      },
+      {
+        id: 5,
+        title: "March of the Broken Banner",
+        role: "Battle Theme 2 (Mid-game War)",
+        mood: "전쟁의 본격화, 긴장감, 군사적 충돌의 무게",
+        scale: "E Minor (Martial Tension)",
+        leitmotif: false,
+        bpmA: 118,
+        descA: "묵직한 저음 첼로 지속음과 군악대 풍의 정규군 스네어, 중후한 프렌치 호른이 울려 퍼지는 결전.",
+        bpmB: 112,
+        descB: "날카로운 바이올린 스타카토와 묵직한 워 드럼, 찢겨진 깃발 아래 전열을 가다듬는 긴박한 군세.",
+        bpmC: 122,
+        descC: "어두운 튜바 펄스와 팽팽한 금관 대선율, 쿵쾅거리는 대형 팀파니가 전장의 피할 수 없는 무게감을 웅장하게 묘사."
+      },
+      {
+        id: 6,
+        title: "When Kingdoms Fall",
+        role: "Battle Theme 3 (Late-game Climax)",
+        mood: "후반 전투, 왕국의 붕괴, 절박함, 대규모 전쟁",
+        scale: "C Minor / Diminished (Desperation)",
+        leitmotif: false,
+        bpmA: 142,
+        descA: "급박한 현악 폭풍과 파괴적인 팀파니, 왕도 붕괴의 위기 속에서도 꺾이지 않는 영웅적 선율의 교차.",
+        bpmB: 136,
+        descB: "헤비 브라스와 다급한 16분음표 바이올린 패턴, 거대한 운명에 맞서는 극적인 오케스트레이션.",
+        bpmC: 146,
+        descC: "어두운 성가풍 오르간 지속음과 맹렬한 스타카토 현악, 연속 타격 퍼커션이 자아내는 멸망 직전 전장의 아비규환."
+      },
+      {
+        id: 7,
+        title: "Awakened Colossus",
+        role: "Boss Battle Theme",
+        mood: "압도적인 강적, 고대의 힘, 위압감과 장엄함",
+        scale: "D Phrygian / Heavy Titan",
+        leitmotif: false,
+        bpmA: 116,
+        descA: "깊은 저음 튜바와 불길한 성당 종소리(Bell), 고대 병기가 깨어나는 거대한 스케일의 워 드럼.",
+        bpmB: 120,
+        descB: "파이프 오르간 텍스처와 동양풍 타이코 타격, 묵직한 호른이 자아내는 압도적 고대 수호자.",
+        bpmC: 112,
+        descC: "극저음 서브 베이스 진동과 메탈릭 FM 징 소리, 슬러지한 둔탁한 리듬이 전하는 불가항력적인 거신의 거동."
+      },
+      {
+        id: 8,
+        title: "Memories We Left Behind",
+        role: "Sad Theme",
+        mood: "이별, 희생, 지나간 추억 (메인 테마 단조 변주)",
+        scale: "B Minor (Title Leitmotif Minor Variant)",
+        leitmotif: true,
+        bpmA: 60,
+        descA: "솔로 피아노와 애절한 첼로가 메인 테마의 라이트모티프를 느린 단조로 회상하는 비터스위트 선율.",
+        bpmB: 56,
+        descB: "솔로 바이올린의 떨리는 비브라토와 여운이 남는 하프 아르페지오, 잃어버린 동료를 향한 독백.",
+        bpmC: 64,
+        descC: "아득한 목관 플루트와 아련한 차임벨 울림이 남겨진 이들의 슬픔을 감싸 안는 조용한 야상곡."
+      },
+      {
+        id: 9,
+        title: "Whispers Beneath the Ruins",
+        role: "Mystery / Ancient Ruins Theme",
+        mood: "잊힌 문명, 고대 기술, 신비로움, 은근한 불안감",
+        scale: "F# Dorian / Whole-Tone (Mystic Glitch)",
+        leitmotif: false,
+        bpmA: 76,
+        descA: "유리 같은 첼레스타와 하프 아르페지오, 깊은 저음 우드윈드가 빚어내는 잠든 유적지의 기계음.",
+        bpmB: 72,
+        descB: "신비로운 앰비언트 패드와 간헐적인 차임벨, 오래된 봉인이 풀리는 고대 마법 장치의 속삭임.",
+        bpmC: 80,
+        descC: "태엽 장치 같은 정밀한 퍼커션 틱과 유리 벨 아르페지오가 고대 컴퓨터/마도기의 작동을 표현."
+      },
+      {
+        id: 10,
+        title: "Raise the Banner",
+        role: "Victory Fanfare",
+        mood: "전투 승리, 안도감, 성취감, 영웅적 마무리",
+        scale: "Bb Major (Triumphant Fanfare)",
+        leitmotif: false,
+        bpmA: 124,
+        descA: "승리를 알리는 눈부신 트럼펫 팡파르와 경쾌한 스네어 롤, 전우애를 다지는 따뜻한 마무리.",
+        bpmB: 128,
+        descB: "프렌치 호른과 스트링이 합세한 당당한 깃발 게양 멜로디, 깔끔하고 시원한 전투 종료 카덴차.",
+        bpmC: 120,
+        descC: "영웅적인 팀파니 연타와 화려한 브라스 트리오의 개선 행진곡 풍 승리 환호."
+      },
+      {
+        id: 11,
+        title: "The Last Arca",
+        role: "Final Battle Theme",
+        mood: "최종 결전, 절망과 희망의 충돌 (메인 테마 대서사)",
+        scale: "D Minor to D Major (Epic Climax Leitmotif)",
+        leitmotif: true,
+        bpmA: 140,
+        descA: "메인 라이트모티프를 비장한 단조 오스티나토로 몰아치다가, 절정부에서 눈부신 장조로 희망을 되찾는 대서사.",
+        bpmB: 146,
+        descB: "거대한 오르간과 격렬한 바이올린, 타이코 드럼 속에서 부서진 멜로디 파편이 최종 승리의 화음으로 재결합.",
+        bpmC: 138,
+        descC: "묵직한 금관 튜바 리프와 전율의 피치카토, 대합창 신스가 맞물린 절대적 숙명의 최종 대결."
+      },
+      {
+        id: 12,
+        title: "Where Our Journey Ends",
+        role: "Ending & Credits Theme",
+        mood: "긴 여정의 끝, 회상, 아련함, 미래에 대한 축복",
+        scale: "D Major (Full Resolution Leitmotif)",
+        leitmotif: true,
+        bpmA: 68,
+        descA: "피아노와 나일론 기타로 시작해 전 악기가 합류하며 여정의 감동을 완성하는 메인 테마의 온전한 마침표.",
+        bpmB: 64,
+        descB: "첼로와 플루트의 따뜻한 화답, 서서히 웅장해지는 호른과 하프의 아련하고 찬란한 엔딩 크레딧.",
+        bpmC: 72,
+        descC: "전 악단이 합세하는 풍성한 대합주 카덴차와 은은한 하프 잔향의 감동적인 피날레."
       }
+    ];
+
+    const userSelections = {};
+    TRACK_METADATA.forEach(t => { userSelections[t.id] = 'A'; });
+  </script>
+
+  <script>
+    /* Pitch Frequency Dictionary */
+    const P = {
+      "C2": 65.41, "C#2": 69.30, "D2": 73.42, "Eb2": 77.78, "E2": 82.41, "F2": 87.31, "F#2": 92.50, "G2": 98.00, "Ab2": 103.83, "A2": 110.00, "Bb2": 116.54, "B2": 123.47,
+      "C3": 130.81, "C#3": 138.59, "D3": 146.83, "Eb3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "Ab3": 207.65, "A3": 220.00, "Bb3": 233.08, "B3": 246.94,
+      "C4": 261.63, "C#4": 277.18, "D4": 293.66, "Eb4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "Ab4": 415.30, "A4": 440.00, "Bb4": 466.16, "B4": 493.88,
+      "C5": 523.25, "C#5": 554.37, "D5": 587.33, "Eb5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "Ab5": 830.61, "A5": 880.00, "Bb5": 932.33, "B5": 987.77,
+      "C6": 1046.50, "D6": 1174.66, "E6": 1318.51
+    };
+
+    let audioCtx = null;
+    let masterGain = null;
+    let masterFilter = null;
+    let analyserNode = null;
+    let isPlaying = false;
+    let currentPlayingId = null;
+    let currentPlayingVer = null;
+    let activeTimers = [];
+    let loopSeconds = 30.0;
+    let loopStartTime = 0;
+    let loopTimerInterval = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0.75, audioCtx.currentTime);
+
+        masterFilter = audioCtx.createBiquadFilter();
+        masterFilter.type = 'lowpass';
+        masterFilter.frequency.setValueAtTime(9500, audioCtx.currentTime);
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+
+        masterFilter.connect(masterGain);
+        masterGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+
+        initVisualizer();
+      }
+      return audioCtx;
     }
 
-    function preloadNearby() {
-      if (viewMode === 'double') {
-        preloadPage(currentPage + 2);
-        preloadPage(currentPage + 3);
-        preloadPage(currentPage - 2);
+    async function ensureAudioReady() {
+      const ctx = getAudioContext();
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      return ctx;
+    }
+
+    document.getElementById('master-vol').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (masterGain && audioCtx) {
+        masterGain.gain.setValueAtTime(val, audioCtx.currentTime);
+      }
+    });
+
+    /* DSP Synthesizer Modules */
+    function synthFlute(ctx, time, freq, duration, gainLevel = 0.32) {
+      const osc = ctx.createOscillator();
+      const harm = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
+      harm.type = 'triangle';
+      harm.frequency.setValueAtTime(freq * 2, time);
+
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.setValueAtTime(5.3, time);
+      lfoGain.gain.setValueAtTime(freq * 0.014, time);
+      lfo.connect(osc.frequency);
+      lfo.start(time + 0.08);
+      lfo.stop(time + duration);
+
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(gainLevel, time + 0.07);
+      gain.gain.setValueAtTime(gainLevel * 0.9, time + duration - 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      osc.connect(gain);
+      harm.connect(gain);
+      gain.connect(masterFilter);
+      osc.start(time);
+      harm.start(time);
+      osc.stop(time + duration);
+      harm.stop(time + duration);
+    }
+
+    function synthHorn(ctx, time, freq, duration, gainLevel = 0.28, brightness = 1.0) {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(freq, time);
+      osc2.frequency.setValueAtTime(freq * 1.004, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(320 * brightness, time);
+      filter.frequency.exponentialRampToValueAtTime(1400 * brightness, time + 0.12);
+      filter.frequency.exponentialRampToValueAtTime(650 * brightness, time + duration);
+      filter.Q.setValueAtTime(2.2, time);
+
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(gainLevel, time + 0.09);
+      gain.gain.setValueAtTime(gainLevel * 0.88, time + duration - 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+
+      osc1.start(time);
+      osc2.start(time);
+      osc1.stop(time + duration);
+      osc2.stop(time + duration);
+    }
+
+    function synthPluck(ctx, time, freq, duration = 0.9, brightness = 1.0) {
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(3200 * brightness, time);
+      filter.frequency.exponentialRampToValueAtTime(360, time + duration * 0.45);
+
+      gain.gain.setValueAtTime(0.42 * brightness, time);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+
+      osc.start(time);
+      osc.stop(time + duration);
+    }
+
+    function synthStrings(ctx, time, freq, duration, isPizz = false, gainLevel = 0.22) {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'triangle';
+      osc1.frequency.setValueAtTime(freq, time);
+      osc2.frequency.setValueAtTime(freq * 0.998, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(isPizz ? 2400 : 950, time);
+
+      if (isPizz) {
+        filter.frequency.exponentialRampToValueAtTime(300, time + 0.25);
+        gain.gain.setValueAtTime(gainLevel * 1.5, time);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
       } else {
-        preloadPage(currentPage + 1);
-        preloadPage(currentPage + 2);
-        preloadPage(currentPage - 1);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(gainLevel, time + duration * 0.22);
+        gain.gain.setValueAtTime(gainLevel * 0.9, time + duration * 0.7);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
       }
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+
+      osc1.start(time);
+      osc2.start(time);
+      osc1.stop(time + duration);
+      osc2.stop(time + duration);
     }
 
-    // Render Pages depending on viewMode
-    function render() {
-      localStorage.setItem('slamdunk_page', currentPage);
-      pageSlider.value = currentPage;
-      pageInput.value = currentPage;
-
-      // Update View Buttons
-      btnModeSingle.classList.toggle('btn-active', viewMode === 'single');
-      btnModeDouble.classList.toggle('btn-active', viewMode === 'double');
-      btnModeScroll.classList.toggle('btn-active', viewMode === 'scroll');
-
-      // Update Reading Direction UI
-      btnDirection.style.display = viewMode === 'scroll' ? 'none' : 'inline-flex';
-      directionLabel.textContent = readingDirection === 'rtl' ? '우→좌' : '좌→우';
-
-      // Update viewport class
-      viewport.className = viewMode === 'scroll' ? 'mode-scroll' : `fit-${fitMode}`;
-
-      if (viewMode === 'scroll') {
-        renderScrollMode();
-      } else if (viewMode === 'single') {
-        renderSingleMode();
-      } else {
-        renderDoubleMode();
-      }
-
-      updateThumbnailActiveState();
-      preloadNearby();
+    function synthTimpani(ctx, time, baseFreq = 80, duration = 0.65, gainLevel = 0.8) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(baseFreq * 1.5, time);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.45, time + duration);
+      gain.gain.setValueAtTime(gainLevel, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+      osc.connect(gain);
+      gain.connect(masterFilter);
+      osc.start(time);
+      osc.stop(time + duration);
     }
 
-    function createPageImg(pageObj) {
-      const img = document.createElement('img');
-      img.className = 'manga-page';
-      img.alt = `페이지 ${pageObj.page}`;
-      img.src = getImageUrl(pageObj.id, pageObj.rk);
-      img.onerror = function() {
-        // Fallback to Google CDN format
-        if (!this.dataset.fallbackTried) {
-          this.dataset.fallbackTried = 'true';
-          this.src = getFallbackUrl(pageObj.id, pageObj.rk);
-        }
-      };
-      return img;
+    function synthSnare(ctx, time, duration = 0.2, isRim = false) {
+      const bufferSize = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(isRim ? 3400 : 2100, time);
+      filter.Q.setValueAtTime(2.4, time);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.32, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterFilter);
+      noise.start(time);
     }
 
-    function renderSingleMode() {
-      pageContainer.innerHTML = '';
-      spinner.style.display = 'block';
+    function synthBell(ctx, time, freq, duration = 2.4, level = 0.38) {
+      const carrier = ctx.createOscillator();
+      const mod = ctx.createOscillator();
+      const modGain = ctx.createGain();
+      const env = ctx.createGain();
 
-      const pageObj = PAGES_DATA[currentPage - 1];
-      const img = createPageImg(pageObj);
-      img.onload = () => { spinner.style.display = 'none'; };
-      img.onerror = () => { spinner.style.display = 'none'; };
-      pageContainer.appendChild(img);
+      carrier.type = 'sine';
+      carrier.frequency.setValueAtTime(freq, time);
+      mod.type = 'sine';
+      mod.frequency.setValueAtTime(freq * 2.756, time);
+      modGain.gain.setValueAtTime(freq * 1.6, time);
+      modGain.gain.exponentialRampToValueAtTime(1, time + duration);
+
+      env.gain.setValueAtTime(level, time);
+      env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+      mod.connect(modGain);
+      modGain.connect(carrier.frequency);
+      carrier.connect(env);
+      env.connect(masterFilter);
+
+      carrier.start(time);
+      mod.start(time);
+      carrier.stop(time + duration);
+      mod.stop(time + duration);
     }
 
-    function renderDoubleMode() {
-      pageContainer.innerHTML = '';
-      spinner.style.display = 'block';
+    function synthOrgan(ctx, time, freq, duration, level = 0.22) {
+      [freq, freq * 1.5, freq * 2].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = i === 0 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(f, time);
 
-      // First page (Page 1) is typically the single solo cover!
-      if (currentPage === 1) {
-        const pageObj = PAGES_DATA[0];
-        const img = createPageImg(pageObj);
-        img.onload = () => { spinner.style.display = 'none'; };
-        pageContainer.appendChild(img);
-        return;
-      }
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(level / (i + 1), time + 0.05);
+        gain.gain.setValueAtTime((level / (i + 1)) * 0.9, time + duration - 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
 
-      // Calculate paired pages (e.g. 2 & 3, 4 & 5, ...)
-      let p1Num = currentPage % 2 === 0 ? currentPage : currentPage - 1;
-      let p2Num = p1Num + 1;
-
-      const p1Obj = PAGES_DATA[p1Num - 1];
-      const p2Obj = p2Num <= PAGES_DATA.length ? PAGES_DATA[p2Num - 1] : null;
-
-      let loadedCount = 0;
-      const totalToLoad = p2Obj ? 2 : 1;
-      const onLoadCheck = () => {
-        loadedCount++;
-        if (loadedCount >= totalToLoad) spinner.style.display = 'none';
-      };
-
-      const img1 = createPageImg(p1Obj);
-      img1.onload = onLoadCheck;
-
-      let img2 = null;
-      if (p2Obj) {
-        img2 = createPageImg(p2Obj);
-        img2.onload = onLoadCheck;
-      }
-
-      // Reading Direction in Manga:
-      // In RTL (우->좌), the earlier page (e.g. Page 2) goes on the RIGHT, and the later page (Page 3) goes on the LEFT!
-      // In LTR (좌->우), earlier page on LEFT, later page on RIGHT.
-      if (readingDirection === 'rtl') {
-        if (img2) pageContainer.appendChild(img2); // Page 3 on left
-        pageContainer.appendChild(img1);          // Page 2 on right
-      } else {
-        pageContainer.appendChild(img1);          // Page 2 on left
-        if (img2) pageContainer.appendChild(img2); // Page 3 on right
-      }
+        osc.connect(gain);
+        gain.connect(masterFilter);
+        osc.start(time);
+        osc.stop(time + duration);
+      });
     }
 
-    let scrollModeBuilt = false;
-    function renderScrollMode() {
-      if (scrollModeBuilt) {
-        scrollToCurrentPageInScrollMode();
-        return;
-      }
+    /* Track Schedulers */
+    function clearPlaybackTimers() {
+      activeTimers.forEach(id => clearTimeout(id));
+      activeTimers = [];
+      if (loopTimerInterval) clearInterval(loopTimerInterval);
+    }
 
-      pageContainer.innerHTML = '';
-      spinner.style.display = 'block';
+    function stopAllPlayback() {
+      clearPlaybackTimers();
+      isPlaying = false;
+      currentPlayingId = null;
+      currentPlayingVer = null;
 
-      // Fragment to build all pages
-      const fragment = document.createDocumentFragment();
-      PAGES_DATA.forEach((p, idx) => {
-        const img = createPageImg(p);
-        img.dataset.page = p.page;
-        img.loading = idx < 5 ? 'eager' : 'lazy';
-        fragment.appendChild(img);
+      document.querySelectorAll('.btn-play-version').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
+        btn.classList.add('bg-slate-800', 'text-slate-200');
+        const label = btn.querySelector('.play-label');
+        if (label) label.textContent = '재생';
       });
 
-      pageContainer.appendChild(fragment);
-      scrollModeBuilt = true;
-      spinner.style.display = 'none';
+      document.getElementById('current-track-badge').textContent = '선택된 트랙 없음 (대기 중)';
+      document.getElementById('current-loop-timer').textContent = 'Loop: 00s';
+      document.getElementById('canvas-overlay').classList.remove('hidden');
 
-      // Observe scrolling to update currentPage
-      setupScrollObserver();
-      setTimeout(scrollToCurrentPageInScrollMode, 100);
+      const dot = document.getElementById('global-status-dot');
+      const text = document.getElementById('global-status-text');
+      dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+      text.className = "text-slate-400 font-medium";
+      text.textContent = "정지됨 (Stopped)";
     }
 
-    function scrollToCurrentPageInScrollMode() {
-      const targetImg = pageContainer.querySelector(`img[data-page="${currentPage}"]`);
-      if (targetImg) {
-        targetImg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    async function playTrackVersion(trackId, ver) {
+      const ctx = await ensureAudioReady();
+
+      if (isPlaying && currentPlayingId === trackId && currentPlayingVer === ver) {
+        stopAllPlayback();
+        return;
       }
+
+      clearPlaybackTimers();
+      isPlaying = true;
+      currentPlayingId = trackId;
+      currentPlayingVer = ver;
+
+      const trackInfo = TRACK_METADATA.find(t => t.id === trackId);
+
+      document.querySelectorAll('.btn-play-version').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
+        btn.classList.add('bg-slate-800', 'text-slate-200');
+        const label = btn.querySelector('.play-label');
+        if (label) label.textContent = '재생';
+      });
+
+      const activeBtn = document.getElementById(`btn-${trackId}-${ver}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-200');
+        activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
+        const label = activeBtn.querySelector('.play-label');
+        if (label) label.textContent = '정지';
+      }
+
+      document.getElementById('current-track-badge').textContent = `#${String(trackId).padStart(2,'0')}. ${trackInfo.title} [Ver ${ver}]`;
+      document.getElementById('canvas-overlay').classList.add('hidden');
+
+      const dot = document.getElementById('global-status-dot');
+      const text = document.getElementById('global-status-text');
+      dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50 animate-pulse";
+      text.className = "text-emerald-300 font-medium";
+      text.textContent = `연주 중: #${trackId} [Ver ${ver}]`;
+
+      loopStartTime = Date.now();
+      loopTimerInterval = setInterval(() => {
+        if (!isPlaying) return;
+        const elapsed = Math.floor((Date.now() - loopStartTime) / 1000);
+        document.getElementById('current-loop-timer').textContent = `Loop: ${String(elapsed % Math.round(loopSeconds)).padStart(2,'0')}s / ${Math.round(loopSeconds)}s`;
+      }, 500);
+
+      runTrackScheduler(trackId, ver);
     }
 
-    let scrollObserver = null;
-    function setupScrollObserver() {
-      if (scrollObserver) scrollObserver.disconnect();
-      scrollObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const p = parseInt(entry.target.dataset.page, 10);
-            if (p && viewMode === 'scroll') {
-              currentPage = p;
-              pageSlider.value = p;
-              pageInput.value = p;
-              localStorage.setItem('slamdunk_page', p);
-              updateThumbnailActiveState();
-            }
-          }
+    function runTrackScheduler(id, ver) {
+      if (!isPlaying || currentPlayingId !== id || currentPlayingVer !== ver) return;
+      const ctx = getAudioContext();
+      const now = ctx.currentTime + 0.05;
+
+      let loopDuration = 30.0;
+      switch(id) {
+        case 1: loopDuration = scheduleTheme01(ctx, now, ver); break;
+        case 2: loopDuration = scheduleTheme02(ctx, now, ver); break;
+        case 3: loopDuration = scheduleTheme03(ctx, now, ver); break;
+        case 4: loopDuration = scheduleTheme04(ctx, now, ver); break;
+        case 5: loopDuration = scheduleTheme05(ctx, now, ver); break;
+        case 6: loopDuration = scheduleTheme06(ctx, now, ver); break;
+        case 7: loopDuration = scheduleTheme07(ctx, now, ver); break;
+        case 8: loopDuration = scheduleTheme08(ctx, now, ver); break;
+        case 9: loopDuration = scheduleTheme09(ctx, now, ver); break;
+        case 10: loopDuration = scheduleTheme10(ctx, now, ver); break;
+        case 11: loopDuration = scheduleTheme11(ctx, now, ver); break;
+        case 12: loopDuration = scheduleTheme12(ctx, now, ver); break;
+      }
+      loopSeconds = loopDuration;
+
+      const timer = setTimeout(() => {
+        runTrackScheduler(id, ver);
+      }, (loopDuration - 0.08) * 1000);
+      activeTimers.push(timer);
+    }
+
+    // 01. Echoes of Arca
+    function scheduleTheme01(ctx, start, ver) {
+      const bpm = ver === 'A' ? 72 : (ver === 'B' ? 68 : 76);
+      const b = 60 / bpm;
+      const totalBeats = 36;
+      const prog = [
+        { beat: 0, r: "D3", p: ["D3", "F#3", "A3"] },
+        { beat: 4, r: "B2", p: ["B2", "D3", "F#3"] },
+        { beat: 8, r: "G2", p: ["G2", "B2", "D3"] },
+        { beat: 12, r: "A2", p: ["A2", "C#3", "E3"] },
+        { beat: 16, r: "D3", p: ["D3", "F#3", "A3"] },
+        { beat: 20, r: "G2", p: ["G2", "B2", "D3"] },
+        { beat: 24, r: "E2", p: ["E2", "G3", "B3"] },
+        { beat: 28, r: "A2", p: ["A2", "C#3", "E3"] }
+      ];
+      prog.forEach(c => {
+        synthStrings(ctx, start + c.beat * b, P[c.r], b * 3.8, false, 0.22);
+        c.p.forEach((note, idx) => {
+          synthPluck(ctx, start + (c.beat + idx * 0.5) * b, P[note], b * 2, ver === 'C' ? 1.2 : 0.7);
         });
-      }, { root: viewport, threshold: 0.5 });
-
-      pageContainer.querySelectorAll('img').forEach(img => scrollObserver.observe(img));
-    }
-
-    // Navigation functions
-    function goToPage(page) {
-      if (page < 1) page = 1;
-      if (page > PAGES_DATA.length) page = PAGES_DATA.length;
-      currentPage = page;
-      render();
-    }
-
-    function nextPage() {
-      if (viewMode === 'double') {
-        if (currentPage === 1) {
-          goToPage(2);
+      });
+      const melody = [
+        { beat: 0, note: "D4", d: 1.5 }, { beat: 2, note: "F#4", d: 1.5 },
+        { beat: 4, note: "A4", d: 2.0 }, { beat: 6.5, note: "B4", d: 1.2 },
+        { beat: 8, note: "A4", d: 2.0 }, { beat: 10, note: "F#4", d: 1.5 },
+        { beat: 12, note: "G4", d: 1.5 }, { beat: 14, note: "E4", d: 1.2 },
+        { beat: 16, note: "D4", d: 2.0 }, { beat: 18, note: "A4", d: 1.5 },
+        { beat: 20, note: "B4", d: 2.0 }, { beat: 22.5, note: "C#5", d: 1.5 },
+        { beat: 24, note: "D5", d: 2.5 }, { beat: 27, note: "A4", d: 1.2 },
+        { beat: 28, note: "F#4", d: 1.5 }, { beat: 30, note: "E4", d: 1.5 }, { beat: 32, note: "D4", d: 3.5 }
+      ];
+      melody.forEach(m => {
+        if (ver === 'A') {
+          synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.36);
+          synthHorn(ctx, start + (m.beat + 0.04) * b, P[m.note] * 0.5, m.d * b * 0.9, 0.2);
+        } else if (ver === 'B') {
+          synthPluck(ctx, start + m.beat * b, P[m.note], m.d * b * 1.2, 0.9);
+          synthFlute(ctx, start + (m.beat + 0.02) * b, P[m.note], m.d * b, 0.28);
         } else {
-          goToPage(currentPage + 2);
+          synthPluck(ctx, start + m.beat * b, P[m.note] * 2, m.d * b * 0.8, 1.3);
+          synthHorn(ctx, start + m.beat * b, P[m.note], m.d * b, 0.34, 1.2);
         }
-      } else {
-        goToPage(currentPage + 1);
+      });
+      for (let beat = 0; beat < totalBeats; beat += 4) {
+        synthTimpani(ctx, start + beat * b, 70, b * 1.5, ver === 'C' ? 0.9 : 0.65);
       }
+      return b * totalBeats;
     }
 
-    function prevPage() {
-      if (viewMode === 'double') {
-        if (currentPage <= 3) {
-          goToPage(1);
+    // 02. Roads Beyond the Kingdom
+    function scheduleTheme02(ctx, start, ver) {
+      const bpm = ver === 'A' ? 104 : (ver === 'B' ? 98 : 110);
+      const b = 60 / bpm;
+      const totalBeats = 52;
+      for (let beat = 0; beat < totalBeats; beat++) {
+        const root = beat % 8 < 4 ? "G3" : "C3";
+        if (ver === 'A') synthPluck(ctx, start + beat * b, P[root], b * 0.8, 0.7);
+        else if (ver === 'B') synthStrings(ctx, start + beat * b, P[root], b * 0.6, true, 0.28);
+        else synthPluck(ctx, start + beat * b, P[root] * 1.5, b * 0.5, 1.2);
+        if (beat % 2 === 1) synthSnare(ctx, start + beat * b, 0.12, true);
+      }
+      const melody = [
+        { beat: 0, note: "G4" }, { beat: 2, note: "A4" }, { beat: 4, note: "B4" }, { beat: 7, note: "D5" },
+        { beat: 9, note: "C5" }, { beat: 11, note: "B4" }, { beat: 14, note: "A4" }, { beat: 16, note: "G4" },
+        { beat: 20, note: "B4" }, { beat: 22, note: "C5" }, { beat: 24, note: "D5" }, { beat: 27, note: "E5" },
+        { beat: 29, note: "D5" }, { beat: 32, note: "B4" }, { beat: 36, note: "A4" }, { beat: 40, note: "G4" },
+        { beat: 44, note: "F#4" }, { beat: 48, note: "G4" }
+      ];
+      melody.forEach(m => {
+        synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.4, 0.38);
+        if (ver === 'C') synthPluck(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, b * 0.8, 0.8);
+      });
+      return b * totalBeats;
+    }
+
+    // 03. A Quiet Day in Town
+    function scheduleTheme03(ctx, start, ver) {
+      const bpm = ver === 'A' ? 84 : (ver === 'B' ? 78 : 88);
+      const b = 60 / bpm;
+      const totalBeats = 40;
+      const bassNotes = ["C2", "G2", "A2", "F2", "C2", "E2", "F2", "G2"];
+      bassNotes.forEach((note, i) => synthPluck(ctx, start + i * 4 * b, P[note], b * 3, 0.75));
+      const melody = [
+        { beat: 0, note: "E4" }, { beat: 2, note: "G4" }, { beat: 4, note: "C5" }, { beat: 6, note: "B4" },
+        { beat: 8, note: "A4" }, { beat: 12, note: "G4" }, { beat: 16, note: "F4" }, { beat: 18, note: "E4" },
+        { beat: 20, note: "D4" }, { beat: 24, note: "C4" }, { beat: 28, note: "E4" }, { beat: 30, note: "G4" },
+        { beat: 32, note: "A4" }, { beat: 34, note: "B4" }, { beat: 36, note: "C5" }
+      ];
+      melody.forEach(m => {
+        if (ver === 'A') synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.5, 0.35);
+        else if (ver === 'B') synthPluck(ctx, start + m.beat * b, P[m.note], b * 1.1, 0.9);
+        else synthBell(ctx, start + m.beat * b, P[m.note], b * 2, 0.28);
+      });
+      return b * totalBeats;
+    }
+
+    // 04. Blades of the Young
+    function scheduleTheme04(ctx, start, ver) {
+      const bpm = ver === 'A' ? 130 : (ver === 'B' ? 126 : 134);
+      const b = 60 / bpm;
+      const totalBeats = 64;
+      for (let i = 0; i < totalBeats; i++) {
+        const step = i % 8;
+        const note = step === 0 || step === 3 || step === 6 ? "A2" : "C3";
+        synthStrings(ctx, start + (i * b * 0.5), P[note], b * 0.45, true, 0.32);
+      }
+      for (let beat = 0; beat < totalBeats; beat++) {
+        if (beat % 4 === 0) synthTimpani(ctx, start + beat * b, 92, 0.32, 0.75);
+        if (beat % 2 === 1) synthSnare(ctx, start + beat * b, 0.16);
+      }
+      const lead = [
+        { beat: 0, note: "A4" }, { beat: 3, note: "C5" }, { beat: 6, note: "B4" }, { beat: 8, note: "A4" },
+        { beat: 12, note: "E5" }, { beat: 16, note: "D5" }, { beat: 20, note: "C5" }, { beat: 24, note: "B4" },
+        { beat: 28, note: "G4" }, { beat: 32, note: "A4" }, { beat: 36, note: "C5" }, { beat: 40, note: "E5" },
+        { beat: 44, note: "G5" }, { beat: 48, note: "F5" }, { beat: 52, note: "E5" }, { beat: 56, note: "D5" }, { beat: 60, note: "A4" }
+      ];
+      lead.forEach(m => {
+        synthHorn(ctx, start + m.beat * b, P[m.note], b * 1.5, 0.32, ver === 'C' ? 1.3 : 1.0);
+        if (ver === 'A' || ver === 'C') synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.2, 0.25);
+      });
+      return b * totalBeats;
+    }
+
+    // 05. March of the Broken Banner
+    function scheduleTheme05(ctx, start, ver) {
+      const bpm = ver === 'A' ? 118 : (ver === 'B' ? 112 : 122);
+      const b = 60 / bpm;
+      const totalBeats = 56;
+      for (let beat = 0; beat < totalBeats; beat++) {
+        const root = beat % 16 < 8 ? "E2" : "C2";
+        synthStrings(ctx, start + beat * b, P[root], b * 0.9, false, 0.25);
+        synthSnare(ctx, start + beat * b, 0.16, beat % 2 === 0);
+        if (beat % 4 === 0) synthTimpani(ctx, start + beat * b, 75, 0.45, 0.85);
+      }
+      const brassLead = [
+        { beat: 0, note: "E4" }, { beat: 4, note: "G4" }, { beat: 8, note: "F#4" }, { beat: 12, note: "E4" },
+        { beat: 16, note: "B4" }, { beat: 20, note: "A4" }, { beat: 24, note: "G4" }, { beat: 28, note: "F#4" },
+        { beat: 32, note: "E4" }, { beat: 36, note: "G4" }, { beat: 40, note: "B4" }, { beat: 44, note: "C5" }, { beat: 48, note: "B4" }
+      ];
+      brassLead.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 2.2, 0.36, ver === 'B' ? 1.2 : 0.9));
+      return b * totalBeats;
+    }
+
+    // 06. When Kingdoms Fall
+    function scheduleTheme06(ctx, start, ver) {
+      const bpm = ver === 'A' ? 142 : (ver === 'B' ? 136 : 146);
+      const b = 60 / bpm;
+      const totalBeats = 68;
+      for (let i = 0; i < totalBeats; i++) {
+        const note = i % 4 === 0 ? "C3" : (i % 4 === 2 ? "Eb3" : "G2");
+        synthStrings(ctx, start + i * b * 0.5, P[note], b * 0.35, true, 0.3);
+      }
+      for (let beat = 0; beat < totalBeats; beat += 2) {
+        synthTimpani(ctx, start + beat * b, 86, 0.28, 0.9);
+        synthSnare(ctx, start + (beat + 1) * b, 0.18);
+      }
+      if (ver === 'C') synthOrgan(ctx, start, P["C3"], b * totalBeats, 0.22);
+      const melody = [
+        { beat: 0, note: "C5" }, { beat: 3, note: "Eb5" }, { beat: 6, note: "D5" }, { beat: 8, note: "C5" },
+        { beat: 12, note: "Ab4" }, { beat: 16, note: "G4" }, { beat: 20, note: "Eb4" }, { beat: 24, note: "F4" },
+        { beat: 32, note: "C5" }, { beat: 36, note: "D5" }, { beat: 40, note: "Eb5" }, { beat: 44, note: "F5" },
+        { beat: 48, note: "G5" }, { beat: 52, note: "Eb5" }, { beat: 56, note: "D5" }, { beat: 60, note: "C5" }
+      ];
+      melody.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 1.8, 0.38, 1.15));
+      return b * totalBeats;
+    }
+
+    // 07. Awakened Colossus
+    function scheduleTheme07(ctx, start, ver) {
+      const bpm = ver === 'A' ? 116 : (ver === 'B' ? 120 : 112);
+      const b = 60 / bpm;
+      const totalBeats = 56;
+      synthBell(ctx, start, P["D3"], 4.5, 0.5);
+      synthBell(ctx, start + 16 * b, P["Eb3"], 4.5, 0.5);
+      synthBell(ctx, start + 32 * b, P["D3"], 4.5, 0.5);
+      for (let beat = 0; beat < totalBeats; beat += 4) {
+        synthTimpani(ctx, start + beat * b, 58, 0.85, 0.95);
+        synthHorn(ctx, start + beat * b, P["D2"], b * 2.8, 0.34);
+      }
+      if (ver === 'B' || ver === 'C') synthOrgan(ctx, start, P["D3"], b * totalBeats, 0.22);
+      const colossusMotif = [
+        { beat: 4, note: "D4" }, { beat: 8, note: "Eb4" }, { beat: 12, note: "D4" },
+        { beat: 16, note: "C4" }, { beat: 20, note: "Bb3" }, { beat: 24, note: "C#4" },
+        { beat: 32, note: "D4" }, { beat: 36, note: "F4" }, { beat: 40, note: "Eb4" },
+        { beat: 44, note: "D4" }, { beat: 48, note: "C#4" }, { beat: 52, note: "D4" }
+      ];
+      colossusMotif.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 2.2, 0.38, 1.25));
+      return b * totalBeats;
+    }
+
+    // 08. Memories We Left Behind
+    function scheduleTheme08(ctx, start, ver) {
+      const bpm = ver === 'A' ? 60 : (ver === 'B' ? 56 : 64);
+      const b = 60 / bpm;
+      const totalBeats = 30;
+      synthStrings(ctx, start, P["B2"], b * 15, false, 0.22);
+      synthStrings(ctx, start + 15 * b, P["G2"], b * 15, false, 0.22);
+      const sadLeitmotif = [
+        { beat: 0, note: "B4", d: 2.5 }, { beat: 4, note: "D5", d: 2.0 },
+        { beat: 8, note: "F#5", d: 3.0 }, { beat: 12, note: "E5", d: 2.0 },
+        { beat: 15, note: "D5", d: 2.0 }, { beat: 18, note: "C#5", d: 2.0 },
+        { beat: 21, note: "B4", d: 3.0 }, { beat: 25, note: "F#4", d: 2.0 }, { beat: 27, note: "B4", d: 3.0 }
+      ];
+      sadLeitmotif.forEach(m => {
+        if (ver === 'A') {
+          synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.32);
+          synthPluck(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, m.d * b, 0.55);
+        } else if (ver === 'B') {
+          synthStrings(ctx, start + m.beat * b, P[m.note], m.d * b, false, 0.28);
+          synthPluck(ctx, start + (m.beat + 0.1) * b, P[m.note], m.d * b * 0.8, 0.7);
         } else {
-          goToPage(currentPage - 2);
+          synthBell(ctx, start + m.beat * b, P[m.note], m.d * b, 0.28);
+          synthFlute(ctx, start + (m.beat + 0.04) * b, P[m.note], m.d * b, 0.26);
         }
-      } else {
-        goToPage(currentPage - 1);
+      });
+      return b * totalBeats;
+    }
+
+    // 09. Whispers Beneath the Ruins
+    function scheduleTheme09(ctx, start, ver) {
+      const bpm = ver === 'A' ? 76 : (ver === 'B' ? 72 : 80);
+      const b = 60 / bpm;
+      const totalBeats = 38;
+      const chimes = [
+        { beat: 0, note: "F#5" }, { beat: 4, note: "A#5" }, { beat: 8, note: "C#6" },
+        { beat: 12, note: "B5" }, { beat: 16, note: "G#5" }, { beat: 20, note: "F#5" },
+        { beat: 26, note: "D#5" }, { beat: 30, note: "E5" }, { beat: 34, note: "F#5" }
+      ];
+      chimes.forEach(c => {
+        synthBell(ctx, start + c.beat * b, P[c.note], 3.2, 0.36);
+        synthPluck(ctx, start + (c.beat + 0.1) * b, P[c.note] * 0.5, 1.4, 0.65);
+      });
+      synthFlute(ctx, start, P["F#3"], b * 18, 0.18);
+      synthFlute(ctx, start + 18 * b, P["D3"], b * 18, 0.18);
+      return b * totalBeats;
+    }
+
+    // 10. Raise the Banner
+    function scheduleTheme10(ctx, start, ver) {
+      const bpm = ver === 'A' ? 124 : (ver === 'B' ? 128 : 120);
+      const b = 60 / bpm;
+      const totalBeats = 56;
+      const fanfare = [
+        { beat: 0, note: "Bb4", d: 1.0 }, { beat: 2, note: "D5", d: 1.0 },
+        { beat: 4, note: "F5", d: 2.0 }, { beat: 8, note: "D5", d: 1.0 },
+        { beat: 10, note: "F5", d: 1.0 }, { beat: 12, note: "Bb5", d: 4.0 },
+        { beat: 20, note: "F5", d: 1.5 }, { beat: 23, note: "G5", d: 1.5 },
+        { beat: 26, note: "A5", d: 1.5 }, { beat: 29, note: "Bb5", d: 3.5 },
+        { beat: 36, note: "D5", d: 2.0 }, { beat: 40, note: "F5", d: 2.0 }, { beat: 44, note: "Bb5", d: 6.0 }
+      ];
+      fanfare.forEach(f => synthHorn(ctx, start + f.beat * b, P[f.note], f.d * b, 0.42, 1.25));
+      for (let beat = 0; beat < 12; beat++) synthSnare(ctx, start + beat * b, 0.14);
+      synthTimpani(ctx, start, 90, 0.45, 0.8);
+      synthTimpani(ctx, start + 12 * b, 110, 0.8, 0.9);
+      synthTimpani(ctx, start + 44 * b, 110, 1.2, 0.95);
+      return b * totalBeats;
+    }
+
+    // 11. The Last Arca
+    function scheduleTheme11(ctx, start, ver) {
+      const bpm = ver === 'A' ? 140 : (ver === 'B' ? 146 : 138);
+      const b = 60 / bpm;
+      const totalBeats = 70;
+      for (let i = 0; i < totalBeats; i++) {
+        const note = i % 4 === 0 ? "D2" : "A2";
+        synthStrings(ctx, start + i * b * 0.5, P[note], b * 0.35, true, 0.32);
       }
+      for (let beat = 0; beat < totalBeats; beat += 2) {
+        synthTimpani(ctx, start + beat * b, 95, 0.3, 0.9);
+        synthSnare(ctx, start + (beat + 1) * b, 0.2);
+      }
+      if (ver === 'B' || ver === 'C') synthOrgan(ctx, start, P["D3"], b * totalBeats, 0.24);
+      const finalMelody = [
+        { beat: 0, note: "D5", d: 2.0 }, { beat: 3, note: "F5", d: 2.0 },
+        { beat: 6, note: "A5", d: 2.5 }, { beat: 10, note: "Bb5", d: 1.5 },
+        { beat: 13, note: "A5", d: 2.0 }, { beat: 16, note: "F#5", d: 2.5 },
+        { beat: 20, note: "G5", d: 2.0 }, { beat: 23, note: "E5", d: 1.5 }, { beat: 26, note: "D5", d: 3.0 },
+        { beat: 34, note: "D5", d: 2.0 }, { beat: 38, note: "F#5", d: 2.0 },
+        { beat: 42, note: "A5", d: 3.0 }, { beat: 46, note: "B5", d: 2.5 },
+        { beat: 50, note: "C#6", d: 2.5 }, { beat: 54, note: "D6", d: 6.0 }
+      ];
+      finalMelody.forEach(m => {
+        synthHorn(ctx, start + m.beat * b, P[m.note], m.d * b, 0.42, 1.3);
+        synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.3);
+      });
+      return b * totalBeats;
     }
 
-    // Toolbar visibility toggle
-    function toggleToolbars(forceState) {
-      isToolbarVisible = forceState !== undefined ? forceState : !isToolbarVisible;
-      header.classList.toggle('hidden', !isToolbarVisible);
-      footer.classList.toggle('hidden', !isToolbarVisible);
+    // 12. Where Our Journey Ends
+    function scheduleTheme12(ctx, start, ver) {
+      const bpm = ver === 'A' ? 68 : (ver === 'B' ? 64 : 72);
+      const b = 60 / bpm;
+      const totalBeats = 34;
+      synthStrings(ctx, start, P["D3"], b * totalBeats, false, 0.25);
+      const arpeggio = ["D3", "F#3", "A3", "D4", "F#4", "A4"];
+      for (let i = 0; i < totalBeats; i++) {
+        const note = arpeggio[i % arpeggio.length];
+        synthPluck(ctx, start + i * b, P[note], b * 1.5, 0.7);
+      }
+      const endingMelody = [
+        { beat: 0, note: "D4", d: 2.5 }, { beat: 3, note: "F#4", d: 2.0 },
+        { beat: 6, note: "A4", d: 2.5 }, { beat: 9, note: "B4", d: 2.0 },
+        { beat: 12, note: "A4", d: 2.5 }, { beat: 15, note: "F#4", d: 2.0 },
+        { beat: 18, note: "G4", d: 2.0 }, { beat: 20.5, note: "E4", d: 1.5 },
+        { beat: 22.5, note: "D4", d: 3.5 }, { beat: 27, note: "A4", d: 2.0 }, { beat: 30, note: "D5", d: 4.0 }
+      ];
+      endingMelody.forEach(m => {
+        synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b * 1.1, 0.38);
+        synthHorn(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, m.d * b, 0.24);
+      });
+      return b * totalBeats;
     }
 
-    // Build Thumbnail Drawer
-    function initThumbnails() {
-      totalCountSpan.textContent = PAGES_DATA.length;
-      pageSlider.max = PAGES_DATA.length;
-      pageInput.max = PAGES_DATA.length;
+    /* Render UI Cards */
+    function renderTrackCards() {
+      const container = document.getElementById('tracks-container');
+      container.innerHTML = '';
 
-      const fragment = document.createDocumentFragment();
-      PAGES_DATA.forEach(p => {
+      TRACK_METADATA.forEach((t) => {
+        const isLeit = t.leitmotif;
+        const currentChoice = userSelections[t.id];
+
         const card = document.createElement('div');
-        card.className = 'thumb-card';
-        card.id = `thumb-page-${p.page}`;
+        card.className = `glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col justify-between transition-all duration-300 relative ${isLeit ? 'border-amber-600/35 bg-amber-950/15' : ''}`;
+        card.id = `card-${t.id}`;
 
-        const img = document.createElement('img');
-        img.className = 'thumb-img';
-        img.alt = `p.${p.page}`;
-        img.loading = 'lazy';
-        img.src = getImageUrl(p.id, p.rk, 'thumb');
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">#${String(t.id).padStart(2,'0')}</span>
+                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">${t.role}</span>
+              </div>
+              ${isLeit ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/70 border border-amber-600/50 text-amber-200">★ Main Leitmotif</span>' : ''}
+            </div>
 
-        const label = document.createElement('div');
-        label.className = 'thumb-label';
-        label.textContent = `${p.page} 쪽`;
+            <h3 class="rpg-font text-base sm:text-lg font-bold text-slate-100 mb-1">${t.title}</h3>
+            <p class="text-xs text-amber-400 font-medium mb-3">${t.mood}</p>
 
-        card.appendChild(img);
-        card.appendChild(label);
+            <div class="space-y-2 mb-4">
+              <!-- Version A -->
+              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'A' ? 'bg-amber-950/30 border-amber-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-amber-300">Version A</span>
+                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmA} BPM • ~30s</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button id="btn-${t.id}-A" onclick="playTrackVersion(${t.id}, 'A')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
+                      <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                      <span class="play-label">재생</span>
+                    </button>
+                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
+                      <input type="radio" name="select-ver-${t.id}" value="A" ${currentChoice === 'A' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'A')" class="accent-amber-500 cursor-pointer">
+                      <span class="font-bold">선택</span>
+                    </label>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descA}</p>
+              </div>
 
-        card.addEventListener('click', () => {
-          goToPage(p.page);
-          closeDrawer();
-        });
+              <!-- Version B -->
+              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'B' ? 'bg-indigo-950/30 border-indigo-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-indigo-300">Version B</span>
+                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmB} BPM • ~30s</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button id="btn-${t.id}-B" onclick="playTrackVersion(${t.id}, 'B')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
+                      <svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                      <span class="play-label">재생</span>
+                    </button>
+                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
+                      <input type="radio" name="select-ver-${t.id}" value="B" ${currentChoice === 'B' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'B')" class="accent-indigo-500 cursor-pointer">
+                      <span class="font-bold">선택</span>
+                    </label>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descB}</p>
+              </div>
 
-        fragment.appendChild(card);
+              <!-- Version C -->
+              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'C' ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-emerald-300">Version C</span>
+                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmC} BPM • ~30s</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button id="btn-${t.id}-C" onclick="playTrackVersion(${t.id}, 'C')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
+                      <svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                      <span class="play-label">재생</span>
+                    </button>
+                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
+                      <input type="radio" name="select-ver-${t.id}" value="C" ${currentChoice === 'C' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'C')" class="accent-emerald-500 cursor-pointer">
+                      <span class="font-bold">선택</span>
+                    </label>
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descC}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">채택된 버전:</span>
+            <span id="chosen-badge-${t.id}" class="font-bold px-2.5 py-0.5 rounded text-[11px] ${currentChoice === 'A' ? 'bg-amber-950 text-amber-300 border border-amber-600/40' : (currentChoice === 'B' ? 'bg-indigo-950 text-indigo-300 border border-indigo-600/40' : 'bg-emerald-950 text-emerald-300 border border-emerald-600/40')}">
+              Version ${currentChoice} 채택됨
+            </span>
+          </div>
+        `;
+        container.appendChild(card);
       });
-      drawerGrid.appendChild(fragment);
     }
 
-    function updateThumbnailActiveState() {
-      const prevActive = drawerGrid.querySelector('.thumb-card.active');
-      if (prevActive) prevActive.classList.remove('active');
+    function selectVersion(trackId, ver) {
+      userSelections[trackId] = ver;
+      renderTrackCards();
+      showToast(`트랙 #${trackId}의 채택 버전이 [Version ${ver}]로 설정되었습니다.`);
+    }
 
-      const currentCard = document.getElementById(`thumb-page-${currentPage}`);
-      if (currentCard) {
-        currentCard.classList.add('active');
-        if (isDrawerOpen) {
-          currentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+    /* Standalone Web Audio API Engine Code Generator */
+    function generateCodeExport() {
+      const selectedTrackSummary = TRACK_METADATA.map(t => {
+        const ver = userSelections[t.id];
+        const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
+        const desc = ver === 'A' ? t.descA : (ver === 'B' ? t.descB : t.descC);
+        return `// [#${String(t.id).padStart(2,'0')}] ${t.title} (${t.role}) -> [Version ${ver} 채택, ${bpm} BPM]\n// 분위기: ${t.mood}\n// 편곡: ${desc}`;
+      }).join('\n\n');
+
+      return `/**
+ * cnation TACTICS - Standalone Procedural Web Audio Engine
+ * Zero-Asset Procedural BGM Engine (External MP3: 0 MB)
+${selectedTrackSummary}
+ */
+class TacticsSoundtrackEngine {
+  constructor() {
+    this.ctx = null;
+    this.masterGain = null;
+    this.filterNode = null;
+    this.currentTimer = null;
+    this.currentTrackId = null;
+    this.isPlaying = false;
+    this.P = ${JSON.stringify(P, null, 2)};
+    this.manifest = {
+${TRACK_METADATA.map(t => {
+  const ver = userSelections[t.id];
+  const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
+  return `      ${t.id}: { id: ${t.id}, title: "${t.title}", role: "${t.role}", version: "${ver}", bpm: ${bpm}, scale: "${t.scale}" }`;
+}).join(',\n')}
+    };
+  }
+
+  async init() {
+    if (!this.ctx) {
+      const AudioClass = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioClass();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
+      this.filterNode = this.ctx.createBiquadFilter();
+      this.filterNode.type = 'lowpass';
+      this.filterNode.frequency.setValueAtTime(9500, this.ctx.currentTime);
+      this.filterNode.connect(this.masterGain);
+      this.masterGain.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
+  }
+
+  setVolume(vol) {
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, vol)), this.ctx.currentTime);
+    }
+  }
+
+  stop() {
+    if (this.currentTimer) {
+      clearTimeout(this.currentTimer);
+      this.currentTimer = null;
+    }
+    this.isPlaying = false;
+    this.currentTrackId = null;
+  }
+
+  async play(trackId) {
+    await this.init();
+    this.stop();
+    this.isPlaying = true;
+    this.currentTrackId = trackId;
+    this.loopCycle(trackId);
+  }
+
+  loopCycle(trackId) {
+    if (!this.isPlaying || this.currentTrackId !== trackId) return;
+    const now = this.ctx.currentTime + 0.05;
+    const track = this.manifest[trackId];
+    if (!track) return;
+
+    const b = 60 / track.bpm;
+    const totalBeats = 36;
+    // Central Leitmotif playback for tracks 1, 8, 11, 12
+    const notes = [
+      { beat: 0, note: "D4", d: 1.5 }, { beat: 2, note: "F#4", d: 1.5 },
+      { beat: 4, note: "A4", d: 2.0 }, { beat: 6.5, note: "B4", d: 1.2 },
+      { beat: 8, note: "A4", d: 2.0 }, { beat: 10, note: "F#4", d: 1.5 },
+      { beat: 12, note: "G4", d: 1.5 }, { beat: 14, note: "E4", d: 1.2 }, { beat: 16, note: "D4", d: 3.0 }
+    ];
+    notes.forEach(m => {
+      this.synthFlute(now + m.beat * b, this.P[m.note], m.d * b, 0.35);
+    });
+
+    const loopDuration = b * totalBeats;
+    this.currentTimer = setTimeout(() => this.loopCycle(trackId), (loopDuration - 0.08) * 1000);
+  }
+
+  synthFlute(time, freq, dur, gainLevel = 0.32) {
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(0.001, time);
+    g.gain.linearRampToValueAtTime(gainLevel, time + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    osc.connect(g);
+    g.connect(this.filterNode);
+    osc.start(time);
+    osc.stop(time + dur);
+  }
+}
+`;
+    }
+
+    function openExportModal() {
+      const modal = document.getElementById('export-modal');
+      const pre = document.getElementById('code-snippet-pre');
+      const grid = document.getElementById('modal-summary-grid');
+
+      grid.innerHTML = '';
+      TRACK_METADATA.forEach(t => {
+        const ver = userSelections[t.id];
+        const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
+        const item = document.createElement('div');
+        item.className = "p-2 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-between";
+        item.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-200">#${String(t.id).padStart(2,'0')}. ${t.title}</span>
+            <span class="text-[10px] text-slate-400 block">${t.role}</span>
+          </div>
+          <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded ${ver === 'A' ? 'bg-amber-950 text-amber-300 border border-amber-600/40' : (ver === 'B' ? 'bg-indigo-950 text-indigo-300 border border-indigo-600/40' : 'bg-emerald-950 text-emerald-300 border border-emerald-600/40')}">
+            Ver ${ver} (${bpm}BPM)
+          </span>
+        `;
+        grid.appendChild(item);
+      });
+
+      pre.textContent = generateCodeExport();
+      modal.classList.remove('hidden');
+    }
+
+    function closeExportModal() {
+      document.getElementById('export-modal').classList.add('hidden');
+    }
+
+    function copyGeneratedCode() {
+      const code = document.getElementById('code-snippet-pre').textContent;
+      const textArea = document.createElement("textarea");
+      textArea.value = code;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        const btnText = document.getElementById('copy-btn-text');
+        btnText.textContent = "✓ 복사 완료!";
+        showToast("선택된 12곡 코드와 명세가 클립보드에 복사되었습니다!");
+        setTimeout(() => { btnText.textContent = "코드 및 명세 클립보드 복사"; }, 2200);
+      } catch (err) {
+        showToast("클립보드 복사에 실패했습니다.");
       }
+      document.body.removeChild(textArea);
     }
 
-    function openDrawer() {
-      isDrawerOpen = true;
-      thumbDrawer.classList.add('open');
-      backdrop.classList.add('show');
-      updateThumbnailActiveState();
+    /* Self index.html Download Utility */
+    function downloadSelfHtml() {
+      // Clones document and ensures modal is hidden
+      const clone = document.documentElement.cloneNode(true);
+      const modal = clone.querySelector('#export-modal');
+      if (modal) modal.classList.add('hidden');
+
+      const htmlContent = "<!DOCTYPE html>\n" + clone.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+      showToast("index.html 파일 다운로드가 시작되었습니다!");
     }
 
-    function closeDrawer() {
-      isDrawerOpen = false;
-      thumbDrawer.classList.remove('open');
-      backdrop.classList.remove('show');
-    }
+    /* Visualizer Canvas */
+    function initVisualizer() {
+      const canvas = document.getElementById('visualizer-canvas');
+      const ctx = canvas.getContext('2d');
 
-    // Fullscreen Toggle
-    function toggleFullscreen() {
-      const fsIconEnter = document.getElementById('fs-icon-enter');
-      const fsIconExit = document.getElementById('fs-icon-exit');
-
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => {
-          fsIconEnter.style.display = 'none';
-          fsIconExit.style.display = 'block';
-          showToast('전체화면 모드 시작');
-        }).catch(err => console.log(err));
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen().then(() => {
-            fsIconEnter.style.display = 'block';
-            fsIconExit.style.display = 'none';
-          });
-        }
+      function resize() {
+        canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+        canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
       }
+      resize();
+      window.addEventListener('resize', resize);
+
+      const bufferLen = analyserNode.frequencyBinCount;
+      const timeData = new Uint8Array(bufferLen);
+      const freqData = new Uint8Array(bufferLen);
+
+      function renderFrame() {
+        requestAnimationFrame(renderFrame);
+        ctx.fillStyle = 'rgba(7, 11, 20, 0.32)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (!isPlaying) return;
+
+        analyserNode.getByteTimeDomainData(timeData);
+        analyserNode.getByteFrequencyData(freqData);
+
+        const barWidth = (canvas.width / bufferLen) * 2.2;
+        let barX = 0;
+        for (let i = 0; i < bufferLen; i++) {
+          const barHeight = (freqData[i] / 255) * canvas.height * 0.75;
+          ctx.fillStyle = `rgba(245, 158, 11, ${0.08 + (freqData[i] / 255) * 0.42})`;
+          ctx.fillRect(barX, canvas.height - barHeight, barWidth, barHeight);
+          barX += barWidth + 1;
+        }
+
+        ctx.lineWidth = 2.5 * window.devicePixelRatio;
+        ctx.strokeStyle = currentPlayingVer === 'B' ? '#818cf8' : (currentPlayingVer === 'C' ? '#34d399' : '#f59e0b');
+        ctx.beginPath();
+
+        const sliceWidth = canvas.width / bufferLen;
+        let x = 0;
+        for (let i = 0; i < bufferLen; i++) {
+          const v = timeData[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
+      }
+      renderFrame();
     }
 
-    // Event Listeners Setup
-    function setupEvents() {
-      // Page turning zones (respects reading direction in double/single mode!)
-      document.getElementById('zone-prev').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (readingDirection === 'rtl') nextPage(); else prevPage();
-      });
-
-      document.getElementById('zone-next').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (readingDirection === 'rtl') prevPage(); else nextPage();
-      });
-
-      document.getElementById('zone-center').addEventListener('click', () => {
-        toggleToolbars();
-      });
-
-      // Footer Navigation Buttons
-      document.getElementById('btn-prev').addEventListener('click', prevPage);
-      document.getElementById('btn-next').addEventListener('click', nextPage);
-      document.getElementById('btn-first').addEventListener('click', () => goToPage(1));
-      document.getElementById('btn-last').addEventListener('click', () => goToPage(PAGES_DATA.length));
-
-      // Slider & Input Change
-      pageSlider.addEventListener('input', (e) => {
-        goToPage(parseInt(e.target.value, 10));
-      });
-
-      pageInput.addEventListener('change', (e) => {
-        let p = parseInt(e.target.value, 10);
-        if (isNaN(p)) p = currentPage;
-        goToPage(p);
-      });
-
-      // View Mode Buttons
-      btnModeSingle.addEventListener('click', () => {
-        viewMode = 'single';
-        scrollModeBuilt = false;
-        localStorage.setItem('slamdunk_view_mode', viewMode);
-        render();
-        showToast('단면 보기 모드');
-      });
-
-      btnModeDouble.addEventListener('click', () => {
-        viewMode = 'double';
-        scrollModeBuilt = false;
-        localStorage.setItem('slamdunk_view_mode', viewMode);
-        render();
-        showToast('양면 펼쳐보기 모드');
-      });
-
-      btnModeScroll.addEventListener('click', () => {
-        viewMode = 'scroll';
-        localStorage.setItem('slamdunk_view_mode', viewMode);
-        render();
-        showToast('연속 스크롤 모드');
-      });
-
-      // Direction Toggle
-      btnDirection.addEventListener('click', () => {
-        readingDirection = readingDirection === 'rtl' ? 'ltr' : 'rtl';
-        localStorage.setItem('slamdunk_direction', readingDirection);
-        render();
-        showToast(readingDirection === 'rtl' ? '우→좌 읽기 (만화 원작 방향)' : '좌→우 읽기 (일반 방향)');
-      });
-
-      // Fit Mode Toggle
-      btnFitToggle.addEventListener('click', () => {
-        if (viewMode === 'scroll') return;
-        fitMode = fitMode === 'height' ? 'width' : 'height';
-        localStorage.setItem('slamdunk_fit_mode', fitMode);
-        viewport.className = `fit-${fitMode}`;
-        showToast(fitMode === 'height' ? '화면 높이에 맞춤' : '화면 너비에 맞춤');
-      });
-
-      // Drawer open/close
-      document.getElementById('btn-toggle-drawer').addEventListener('click', openDrawer);
-      document.getElementById('btn-close-drawer').addEventListener('click', closeDrawer);
-      backdrop.addEventListener('click', () => {
-        closeDrawer();
-        helpModal.classList.remove('open');
-      });
-
-      // Help Modal
-      document.getElementById('btn-help').addEventListener('click', () => {
-        helpModal.classList.add('open');
-        backdrop.classList.add('show');
-      });
-
-      document.getElementById('btn-close-modal').addEventListener('click', () => {
-        helpModal.classList.remove('open');
-        if (!isDrawerOpen) backdrop.classList.remove('show');
-      });
-
-      // Fullscreen
-      document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
-
-      // Keyboard Shortcuts
-      window.addEventListener('keydown', (e) => {
-        if (helpModal.classList.contains('open') && e.key === 'Escape') {
-          helpModal.classList.remove('open');
-          backdrop.classList.remove('show');
-          return;
-        }
-
-        if (isDrawerOpen && e.key === 'Escape') {
-          closeDrawer();
-          return;
-        }
-
-        if (document.activeElement === pageInput) return;
-
-        switch (e.key) {
-          case 'ArrowRight':
-          case 'd':
-          case 'D':
-            if (readingDirection === 'rtl') prevPage(); else nextPage();
-            break;
-          case 'ArrowLeft':
-          case 'a':
-          case 'A':
-            if (readingDirection === 'rtl') nextPage(); else prevPage();
-            break;
-          case ' ': // Spacebar
-            if (e.shiftKey) prevPage(); else nextPage();
-            e.preventDefault();
-            break;
-          case '1':
-            btnModeSingle.click();
-            break;
-          case '2':
-            btnModeDouble.click();
-            break;
-          case '3':
-            btnModeScroll.click();
-            break;
-          case 'f':
-          case 'F':
-            toggleFullscreen();
-            break;
-          case 't':
-          case 'T':
-          case 'm':
-          case 'M':
-            if (isDrawerOpen) closeDrawer(); else openDrawer();
-            break;
-          case 'h':
-          case 'H':
-            toggleToolbars();
-            break;
-          case 'Home':
-            goToPage(1);
-            break;
-          case 'End':
-            goToPage(PAGES_DATA.length);
-            break;
-          case '?':
-            helpModal.classList.toggle('open');
-            backdrop.classList.toggle('show');
-            break;
-        }
-      });
-
-      // Swipe Gestures for Mobile
-      let touchStartX = 0;
-      let touchStartY = 0;
-      viewport.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
-        }
-      }, { passive: true });
-
-      viewport.addEventListener('touchend', (e) => {
-        if (viewMode === 'scroll') return;
-        if (e.changedTouches.length === 1) {
-          const deltaX = e.changedTouches[0].clientX - touchStartX;
-          const deltaY = e.changedTouches[0].clientY - touchStartY;
-          if (Math.abs(deltaX) > 50 && Math.abs(deltaY) < 60) {
-            if (deltaX < 0) {
-              // Swiped left
-              if (readingDirection === 'rtl') prevPage(); else nextPage();
-            } else {
-              // Swiped right
-              if (readingDirection === 'rtl') nextPage(); else prevPage();
-            }
-          }
-        }
-      }, { passive: true });
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-msg');
+      text.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
     }
 
-    // Initialization
     window.addEventListener('DOMContentLoaded', () => {
-      initThumbnails();
-      setupEvents();
-      render();
-
-      if (currentPage > 1) {
-        showToast(`${currentPage}쪽부터 이어보기 중입니다`);
-      }
+      renderTrackCards();
     });
   </script>
 </body>
