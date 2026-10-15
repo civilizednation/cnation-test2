@@ -1,1421 +1,425 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>cnation TACTICS - 36 BGM Studio</title>
-  <meta name="description" content="1990년대 일본 고전 전략 RPG 감성의 12개 테마 × 3가지 버전 (총 36곡) 순수 Web Audio API 절차적 BGM 생성 및 선택 코드 추출 스튜디오">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Noto Sans KR', sans-serif; }
-    .rpg-font { font-family: 'Cinzel', serif; }
-    .mono-font { font-family: 'JetBrains Mono', monospace; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #090d16; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #d97706; }
-    .glass-card {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(14px);
-      border: 1px solid rgba(245, 158, 11, 0.2);
-    }
-    .glow-gold {
-      text-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
-    }
-    input[type=range] {
-      accent-color: #f59e0b;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cnation TACTICS - 3D 캐릭터 & 몬스터 투구 비교 뷰어</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1c2b2d;color:#eef3e8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
+h1{font-size:18px;margin-bottom:6px;color:#a8e6cf}
+p.desc{font-size:13px;color:#b8c9c2;margin-bottom:16px;line-height:1.5}
+.section-title{font-size:15px;font-weight:800;color:#ffd97d;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #355256}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:#eff3e8;color:#233d36;border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35)}
+.canvas-wrap{width:100%;height:240px;background:radial-gradient(ellipse at 50% 35%,#b5d4c2,#d8e4d4 72%);border-radius:10px;position:relative;overflow:hidden}
+canvas{width:100%;height:100%;display:block;cursor:grab}
+.tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-top:8px}
+.tag.enemy{background:#522b2b;color:#ff9e9e}
+.tag.hero{background:#1f5c52;color:#b5f5ec}
+.card h3{font-size:16px;margin:6px 0 4px}
+.card p{font-size:12px;color:#4a635b;line-height:1.45}
+.poly-badge{position:absolute;top:8px;right:8px;background:rgba(20,42,44,0.75);color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;font-weight:700}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-amber-600 selection:text-white pb-12">
+<body>
 
-  <header class="border-b border-amber-900/30 bg-slate-900/85 sticky top-0 z-40 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-rose-700 to-indigo-950 flex items-center justify-center shadow-lg border border-amber-500/40 shrink-0">
-          <svg class="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-          </svg>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="rpg-font text-base sm:text-xl font-bold tracking-wider text-amber-300 glow-gold">cnation TACTICS</h1>
-            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-amber-950/90 border border-amber-600/40 text-amber-300">36 BGM Studio</span>
-          </div>
-          <p class="text-xs text-slate-400">12개 테마 × 3개 버전 (총 36곡) • 0MB 순수 Web Audio API 실시간 무한 루프</p>
-        </div>
-      </div>
+<h1>cnation TACTICS · 3D 모델 업그레이드 프리뷰</h1>
+<p class="desc">마우스나 손가락으로 각 모델을 좌우로 드래그해 회전시켜 보세요. 모든 모델은 외부 이미지 없이 순수 Three.js 도형 병합(1 Draw Call)으로 렌더링됩니다.</p>
 
-      <!-- Header Action Controls -->
-      <div class="flex items-center gap-2.5 flex-wrap">
-        <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
-          <span class="w-2.5 h-2.5 rounded-full bg-slate-500" id="global-status-dot"></span>
-          <span id="global-status-text" class="text-slate-400 font-medium">대기 중 (Ready)</span>
-        </div>
+<div class="section-title">1. 인간형 적군 투구 디자인 3종 (피부 노출 제거 · 칙칙한 철제 톤 · 붉은 안광)</div>
+<div class="grid" id="enemyGrid"></div>
 
-        <button onclick="stopAllPlayback()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition active:scale-95">
-          <svg class="w-3.5 h-3.5 text-rose-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"/></svg>
-          전체 정지
-        </button>
+<div class="section-title">2. 주인공 고정밀(High-Detail) 3D 모델링 비교 (카일 & 리아)</div>
+<div class="grid" id="heroGrid"></div>
 
-        <!-- Direct One-Click index.html Save Button -->
-        <button onclick="downloadSelfHtml()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition active:scale-95" title="구글 드라이브 또는 깃허브 저장용 index.html 파일 저장">
-          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-          </svg>
-          <span>💾 index.html 다운로드</span>
-        </button>
-
-        <button onclick="openExportModal()" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-950 transition active:scale-95">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-          <span>선택 12곡 코드 추출 (12/12)</span>
-        </button>
-
-        <!-- Master Volume Slider -->
-        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-          </svg>
-          <input type="range" id="master-vol" min="0" max="1" step="0.01" value="0.75" class="w-16 sm:w-20 cursor-pointer" title="마스터 볼륨">
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">
-
-    <!-- Oscilloscope / Visualizer Stage -->
-    <div class="glass-card rounded-2xl p-5 border-amber-900/30 shadow-2xl relative overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div class="flex items-center gap-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-          <h2 class="text-xs font-bold tracking-widest text-slate-300 uppercase">Live Oscilloscope & Procedural Voice Spectrum</h2>
-        </div>
-        <div class="flex items-center gap-2 text-xs">
-          <span class="text-slate-400">현재 연주 중:</span>
-          <span id="current-track-badge" class="rpg-font text-sm font-bold text-amber-300">선택된 트랙 없음 (대기 중)</span>
-          <span id="current-loop-timer" class="mono-font text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Loop: 00s</span>
-        </div>
-      </div>
-
-      <div class="h-28 sm:h-36 w-full bg-slate-950/90 rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner">
-        <canvas id="visualizer-canvas" class="w-full h-full"></canvas>
-        <div id="canvas-overlay" class="absolute inset-0 flex flex-col items-center justify-center text-xs text-slate-500 tracking-wider pointer-events-none px-4 text-center">
-          <span>각 트랙의 [Ver A], [Ver B], [Ver C] 버튼을 누르면 약 30초 길이의 프로시저럴 BGM이 무한 루프로 연주됩니다.</span>
-          <span class="text-[11px] text-amber-500/80 mt-1">💡 1번, 8번, 11번, 12번 트랙은 같은 중심 메인 라이트모티프(Leitmotif)의 유기적 테마 변주곡입니다.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Curator Guidance & Category Navigation Filter -->
-    <div class="bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-slate-900/40 border border-amber-700/30 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs">
-      <div class="space-y-1">
-        <div class="flex items-center gap-2 text-amber-300 font-bold">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span>36곡 절차적 오케스트라 사운드트랙 (12곡 × 3버전) 청음 및 선정 시스템</span>
-        </div>
-        <p class="text-slate-400">
-          각 번호마다 편곡과 악기 구성이 서로 다른 <strong class="text-amber-300">Ver A</strong>, <strong class="text-indigo-300">Ver B</strong>, <strong class="text-emerald-300">Ver C</strong>를 들어보신 후 마음에 드는 버전을 라디오 버튼으로 선택하세요.
-          상단의 <span class="text-amber-400 font-semibold">[선택 12곡 코드 추출]</span>을 누르면 12개 곡 전체의 명세와 게임 프로젝트용 단일 Javascript 엔진 코드가 완성됩니다.
-        </p>
-      </div>
-      <div class="flex items-center gap-2 bg-slate-900/90 px-3.5 py-2 rounded-lg border border-slate-700 shrink-0">
-        <span class="text-[11px] text-slate-400">선택 완료 현황:</span>
-        <span id="selection-counter" class="text-xs font-mono font-bold text-amber-400">12 / 12 곡 준비됨</span>
-      </div>
-    </div>
-
-    <!-- 12 Tracks Container (Each with Version A, B, C) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5" id="tracks-container">
-      <!-- Dynamically generated track cards -->
-    </div>
-
-  </main>
-
-  <!-- Code Export & Summary Modal -->
-  <div id="export-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="glass-card max-w-4xl w-full rounded-2xl border-amber-500/40 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
-      <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-bold font-mono">
-            &lt;/&gt;
-          </div>
-          <div>
-            <h3 class="rpg-font text-base font-bold text-amber-300">게임 프로젝트용 Web Audio API 사운드트랙 코드</h3>
-            <p class="text-xs text-slate-400">선택하신 12개 테마(A/B/C 버전 채택 반영)의 제목, 분위기 명세 및 단일 실행 클래스 코드</p>
-          </div>
-        </div>
-        <button onclick="closeExportModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <div class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-4">
-        <!-- Selected Summary Table -->
-        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
-          <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <span>📋 최종 선택된 12개 사운드트랙 명세 요약</span>
-          </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" id="modal-summary-grid">
-            <!-- Dynamically populated selected track summary -->
-          </div>
-        </div>
-
-        <!-- Code Block -->
-        <div class="relative">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-1 px-1">
-            <span>Vanilla JavaScript Web Audio API 클래스 (`TacticsSoundtrackEngine.js`):</span>
-            <span class="text-amber-400 font-mono">외부 MP3 에셋 0MB (Zero Asset)</span>
-          </div>
-          <pre class="bg-slate-950 p-4 rounded-xl text-xs text-amber-100 font-mono overflow-x-auto border border-slate-800 h-80 sm:h-96 leading-relaxed select-all" id="code-snippet-pre"></pre>
-        </div>
-      </div>
-
-      <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-900/80 flex-wrap gap-2">
-        <span class="text-xs text-slate-400">💡 코드 복사 후 게임 초기화 스크립트에 바로 붙여넣어 실행할 수 있습니다.</span>
-        <div class="flex items-center gap-2">
-          <button onclick="closeExportModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold transition">닫기</button>
-          <button onclick="copyGeneratedCode()" id="btn-copy-code" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-xs text-white font-bold transition flex items-center gap-1.5 shadow-md shadow-amber-950 active:scale-95">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-            <span id="copy-btn-text">코드 및 명세 클립보드 복사</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Custom Toast Notification -->
-  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/40 text-amber-200 px-4 py-2.5 rounded-xl shadow-2xl text-xs flex items-center gap-2 translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
-    <span id="toast-icon">✓</span>
-    <span id="toast-msg">알림 메시지</span>
-  </div>
-
-  <script>
-    /* 12 Track Metadata Definition with 3 Distinct Variations Each (A, B, C) */
-    const TRACK_METADATA = [
-      {
-        id: 1,
-        title: "Echoes of Arca",
-        role: "Main Title Theme",
-        mood: "희망, 운명, 새로운 여행의 시작, 비터스위트",
-        scale: "D Major / Minor (Core Leitmotif)",
-        leitmotif: true,
-        bpmA: 72,
-        descA: "플루트와 솔로 피아노로 중심 멜로디를 소개하고, 따뜻한 현악 패드와 프렌치 호른이 합류하는 서정적 영웅 서사.",
-        bpmB: 68,
-        descB: "어쿠스틱 기타 아르페지오와 애절한 목관, 부드러운 바이올린 비브라토가 이끄는 고독하지만 따스한 모험의 서막.",
-        bpmC: 76,
-        descC: "당당한 하프시코드와 금관 앙상블, 팀파니 심장박동이 어우러져 고전 SRPG 명작의 웅장한 전설을 알리는 클래식 편곡."
-      },
-      {
-        id: 2,
-        title: "Roads Beyond the Kingdom",
-        role: "World Map Theme",
-        mood: "여행, 탐험, 미지의 대륙에 대한 기대감",
-        scale: "G Major (Adventure Folk)",
-        leitmotif: false,
-        bpmA: 104,
-        descA: "어쿠스틱 기타 핑거피킹과 맑은 플루트, 행진풍의 정갈한 스네어가 펼쳐진 미지의 지도 위를 걷는 경쾌한 행진.",
-        bpmB: 98,
-        descB: "피치카토 현악과 클라리넷, 따뜻한 호른 액센트가 지도를 펼쳐놓고 행선지를 고르는 설렘을 표현하는 아기자기한 여행길.",
-        bpmC: 110,
-        descC: "켈틱 풍의 활기찬 휘슬과 류트 플럭, 빠른 16비트 퍼커션 롤이 광활한 평원과 고대 유적으로의 쾌속 전진을 묘사."
-      },
-      {
-        id: 3,
-        title: "A Quiet Day in Town",
-        role: "Town Theme",
-        mood: "평화로운 마을, 휴식, 일상, 따뜻함",
-        scale: "C Major / Rustic Folk",
-        leitmotif: false,
-        bpmA: 84,
-        descA: "따뜻한 류트 플럭과 목관 플루트, 어쿠스틱 베이스의 평화로운 선술집 대화와 대장간의 안전한 안식처.",
-        bpmB: 78,
-        descB: "만돌린과 피치카토 바이올린, 나일론 기타의 유럽 중세 풍 시골 시장 풍경. 긴장감 없는 아늑한 휴식.",
-        bpmC: 88,
-        descC: "오르골(Music Box) 벨 텍스처와 따뜻한 현악 패드, 저음 바순이 빚어내는 별빛 가득한 시골 여관의 평온한 밤."
-      },
-      {
-        id: 4,
-        title: "Blades of the Young",
-        role: "Battle Theme 1 (Early Encounters)",
-        mood: "초반 전투, 젊은 모험가들의 패기, 경쾌함",
-        scale: "A Minor / Dorian (Forward Momentum)",
-        leitmotif: false,
-        bpmA: 130,
-        descA: "빠른 현악 오스티나토와 마칭 스네어, 당당한 브라스 팡파르가 이끄는 밝고 희망찬 초반 몬스터 교전.",
-        bpmB: 126,
-        descB: "정갈한 스네어 드럼과 호른 리프, 역동적인 바이올린 합주가 젊은 기사단의 당찬 첫 출진을 알리는 경쾌한 전투.",
-        bpmC: 134,
-        descC: "질주하는 16분음표 베이스와 민첩한 플루트 스타카토, 타격감 넘치는 팀파니가 맞물린 속도감 중심의 전초전."
-      },
-      {
-        id: 5,
-        title: "March of the Broken Banner",
-        role: "Battle Theme 2 (Mid-game War)",
-        mood: "전쟁의 본격화, 긴장감, 군사적 충돌의 무게",
-        scale: "E Minor (Martial Tension)",
-        leitmotif: false,
-        bpmA: 118,
-        descA: "묵직한 저음 첼로 지속음과 군악대 풍의 정규군 스네어, 중후한 프렌치 호른이 울려 퍼지는 결전.",
-        bpmB: 112,
-        descB: "날카로운 바이올린 스타카토와 묵직한 워 드럼, 찢겨진 깃발 아래 전열을 가다듬는 긴박한 군세.",
-        bpmC: 122,
-        descC: "어두운 튜바 펄스와 팽팽한 금관 대선율, 쿵쾅거리는 대형 팀파니가 전장의 피할 수 없는 무게감을 웅장하게 묘사."
-      },
-      {
-        id: 6,
-        title: "When Kingdoms Fall",
-        role: "Battle Theme 3 (Late-game Climax)",
-        mood: "후반 전투, 왕국의 붕괴, 절박함, 대규모 전쟁",
-        scale: "C Minor / Diminished (Desperation)",
-        leitmotif: false,
-        bpmA: 142,
-        descA: "급박한 현악 폭풍과 파괴적인 팀파니, 왕도 붕괴의 위기 속에서도 꺾이지 않는 영웅적 선율의 교차.",
-        bpmB: 136,
-        descB: "헤비 브라스와 다급한 16분음표 바이올린 패턴, 거대한 운명에 맞서는 극적인 오케스트레이션.",
-        bpmC: 146,
-        descC: "어두운 성가풍 오르간 지속음과 맹렬한 스타카토 현악, 연속 타격 퍼커션이 자아내는 멸망 직전 전장의 아비규환."
-      },
-      {
-        id: 7,
-        title: "Awakened Colossus",
-        role: "Boss Battle Theme",
-        mood: "압도적인 강적, 고대의 힘, 위압감과 장엄함",
-        scale: "D Phrygian / Heavy Titan",
-        leitmotif: false,
-        bpmA: 116,
-        descA: "깊은 저음 튜바와 불길한 성당 종소리(Bell), 고대 병기가 깨어나는 거대한 스케일의 워 드럼.",
-        bpmB: 120,
-        descB: "파이프 오르간 텍스처와 동양풍 타이코 타격, 묵직한 호른이 자아내는 압도적 고대 수호자.",
-        bpmC: 112,
-        descC: "극저음 서브 베이스 진동과 메탈릭 FM 징 소리, 슬러지한 둔탁한 리듬이 전하는 불가항력적인 거신의 거동."
-      },
-      {
-        id: 8,
-        title: "Memories We Left Behind",
-        role: "Sad Theme",
-        mood: "이별, 희생, 지나간 추억 (메인 테마 단조 변주)",
-        scale: "B Minor (Title Leitmotif Minor Variant)",
-        leitmotif: true,
-        bpmA: 60,
-        descA: "솔로 피아노와 애절한 첼로가 메인 테마의 라이트모티프를 느린 단조로 회상하는 비터스위트 선율.",
-        bpmB: 56,
-        descB: "솔로 바이올린의 떨리는 비브라토와 여운이 남는 하프 아르페지오, 잃어버린 동료를 향한 독백.",
-        bpmC: 64,
-        descC: "아득한 목관 플루트와 아련한 차임벨 울림이 남겨진 이들의 슬픔을 감싸 안는 조용한 야상곡."
-      },
-      {
-        id: 9,
-        title: "Whispers Beneath the Ruins",
-        role: "Mystery / Ancient Ruins Theme",
-        mood: "잊힌 문명, 고대 기술, 신비로움, 은근한 불안감",
-        scale: "F# Dorian / Whole-Tone (Mystic Glitch)",
-        leitmotif: false,
-        bpmA: 76,
-        descA: "유리 같은 첼레스타와 하프 아르페지오, 깊은 저음 우드윈드가 빚어내는 잠든 유적지의 기계음.",
-        bpmB: 72,
-        descB: "신비로운 앰비언트 패드와 간헐적인 차임벨, 오래된 봉인이 풀리는 고대 마법 장치의 속삭임.",
-        bpmC: 80,
-        descC: "태엽 장치 같은 정밀한 퍼커션 틱과 유리 벨 아르페지오가 고대 컴퓨터/마도기의 작동을 표현."
-      },
-      {
-        id: 10,
-        title: "Raise the Banner",
-        role: "Victory Fanfare",
-        mood: "전투 승리, 안도감, 성취감, 영웅적 마무리",
-        scale: "Bb Major (Triumphant Fanfare)",
-        leitmotif: false,
-        bpmA: 124,
-        descA: "승리를 알리는 눈부신 트럼펫 팡파르와 경쾌한 스네어 롤, 전우애를 다지는 따뜻한 마무리.",
-        bpmB: 128,
-        descB: "프렌치 호른과 스트링이 합세한 당당한 깃발 게양 멜로디, 깔끔하고 시원한 전투 종료 카덴차.",
-        bpmC: 120,
-        descC: "영웅적인 팀파니 연타와 화려한 브라스 트리오의 개선 행진곡 풍 승리 환호."
-      },
-      {
-        id: 11,
-        title: "The Last Arca",
-        role: "Final Battle Theme",
-        mood: "최종 결전, 절망과 희망의 충돌 (메인 테마 대서사)",
-        scale: "D Minor to D Major (Epic Climax Leitmotif)",
-        leitmotif: true,
-        bpmA: 140,
-        descA: "메인 라이트모티프를 비장한 단조 오스티나토로 몰아치다가, 절정부에서 눈부신 장조로 희망을 되찾는 대서사.",
-        bpmB: 146,
-        descB: "거대한 오르간과 격렬한 바이올린, 타이코 드럼 속에서 부서진 멜로디 파편이 최종 승리의 화음으로 재결합.",
-        bpmC: 138,
-        descC: "묵직한 금관 튜바 리프와 전율의 피치카토, 대합창 신스가 맞물린 절대적 숙명의 최종 대결."
-      },
-      {
-        id: 12,
-        title: "Where Our Journey Ends",
-        role: "Ending & Credits Theme",
-        mood: "긴 여정의 끝, 회상, 아련함, 미래에 대한 축복",
-        scale: "D Major (Full Resolution Leitmotif)",
-        leitmotif: true,
-        bpmA: 68,
-        descA: "피아노와 나일론 기타로 시작해 전 악기가 합류하며 여정의 감동을 완성하는 메인 테마의 온전한 마침표.",
-        bpmB: 64,
-        descB: "첼로와 플루트의 따뜻한 화답, 서서히 웅장해지는 호른과 하프의 아련하고 찬란한 엔딩 크레딧.",
-        bpmC: 72,
-        descC: "전 악단이 합세하는 풍성한 대합주 카덴차와 은은한 하프 잔향의 감동적인 피날레."
-      }
-    ];
-
-    const userSelections = {};
-    TRACK_METADATA.forEach(t => { userSelections[t.id] = 'A'; });
-  </script>
-
-  <script>
-    /* Pitch Frequency Dictionary */
-    const P = {
-      "C2": 65.41, "C#2": 69.30, "D2": 73.42, "Eb2": 77.78, "E2": 82.41, "F2": 87.31, "F#2": 92.50, "G2": 98.00, "Ab2": 103.83, "A2": 110.00, "Bb2": 116.54, "B2": 123.47,
-      "C3": 130.81, "C#3": 138.59, "D3": 146.83, "Eb3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "Ab3": 207.65, "A3": 220.00, "Bb3": 233.08, "B3": 246.94,
-      "C4": 261.63, "C#4": 277.18, "D4": 293.66, "Eb4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "Ab4": 415.30, "A4": 440.00, "Bb4": 466.16, "B4": 493.88,
-      "C5": 523.25, "C#5": 554.37, "D5": 587.33, "Eb5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "Ab5": 830.61, "A5": 880.00, "Bb5": 932.33, "B5": 987.77,
-      "C6": 1046.50, "D6": 1174.66, "E6": 1318.51
-    };
-
-    let audioCtx = null;
-    let masterGain = null;
-    let masterFilter = null;
-    let analyserNode = null;
-    let isPlaying = false;
-    let currentPlayingId = null;
-    let currentPlayingVer = null;
-    let activeTimers = [];
-    let loopSeconds = 30.0;
-    let loopStartTime = 0;
-    let loopTimerInterval = null;
-
-    function getAudioContext() {
-      if (!audioCtx) {
-        const AudioClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioClass();
-
-        masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.75, audioCtx.currentTime);
-
-        masterFilter = audioCtx.createBiquadFilter();
-        masterFilter.type = 'lowpass';
-        masterFilter.frequency.setValueAtTime(9500, audioCtx.currentTime);
-
-        analyserNode = audioCtx.createAnalyser();
-        analyserNode.fftSize = 256;
-
-        masterFilter.connect(masterGain);
-        masterGain.connect(analyserNode);
-        analyserNode.connect(audioCtx.destination);
-
-        initVisualizer();
-      }
-      return audioCtx;
-    }
-
-    async function ensureAudioReady() {
-      const ctx = getAudioContext();
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-      return ctx;
-    }
-
-    document.getElementById('master-vol').addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      if (masterGain && audioCtx) {
-        masterGain.gain.setValueAtTime(val, audioCtx.currentTime);
-      }
-    });
-
-    /* DSP Synthesizer Modules */
-    function synthFlute(ctx, time, freq, duration, gainLevel = 0.32) {
-      const osc = ctx.createOscillator();
-      const harm = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, time);
-      harm.type = 'triangle';
-      harm.frequency.setValueAtTime(freq * 2, time);
-
-      const lfo = ctx.createOscillator();
-      const lfoGain = ctx.createGain();
-      lfo.frequency.setValueAtTime(5.3, time);
-      lfoGain.gain.setValueAtTime(freq * 0.014, time);
-      lfo.connect(osc.frequency);
-      lfo.start(time + 0.08);
-      lfo.stop(time + duration);
-
-      gain.gain.setValueAtTime(0.001, time);
-      gain.gain.linearRampToValueAtTime(gainLevel, time + 0.07);
-      gain.gain.setValueAtTime(gainLevel * 0.9, time + duration - 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      osc.connect(gain);
-      harm.connect(gain);
-      gain.connect(masterFilter);
-      osc.start(time);
-      harm.start(time);
-      osc.stop(time + duration);
-      harm.stop(time + duration);
-    }
-
-    function synthHorn(ctx, time, freq, duration, gainLevel = 0.28, brightness = 1.0) {
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc1.type = 'sawtooth';
-      osc2.type = 'sawtooth';
-      osc1.frequency.setValueAtTime(freq, time);
-      osc2.frequency.setValueAtTime(freq * 1.004, time);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(320 * brightness, time);
-      filter.frequency.exponentialRampToValueAtTime(1400 * brightness, time + 0.12);
-      filter.frequency.exponentialRampToValueAtTime(650 * brightness, time + duration);
-      filter.Q.setValueAtTime(2.2, time);
-
-      gain.gain.setValueAtTime(0.001, time);
-      gain.gain.linearRampToValueAtTime(gainLevel, time + 0.09);
-      gain.gain.setValueAtTime(gainLevel * 0.88, time + duration - 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterFilter);
-
-      osc1.start(time);
-      osc2.start(time);
-      osc1.stop(time + duration);
-      osc2.stop(time + duration);
-    }
-
-    function synthPluck(ctx, time, freq, duration = 0.9, brightness = 1.0) {
-      const osc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, time);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(3200 * brightness, time);
-      filter.frequency.exponentialRampToValueAtTime(360, time + duration * 0.45);
-
-      gain.gain.setValueAtTime(0.42 * brightness, time);
-      gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterFilter);
-
-      osc.start(time);
-      osc.stop(time + duration);
-    }
-
-    function synthStrings(ctx, time, freq, duration, isPizz = false, gainLevel = 0.22) {
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc1.type = 'sawtooth';
-      osc2.type = 'triangle';
-      osc1.frequency.setValueAtTime(freq, time);
-      osc2.frequency.setValueAtTime(freq * 0.998, time);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(isPizz ? 2400 : 950, time);
-
-      if (isPizz) {
-        filter.frequency.exponentialRampToValueAtTime(300, time + 0.25);
-        gain.gain.setValueAtTime(gainLevel * 1.5, time);
-        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-      } else {
-        gain.gain.setValueAtTime(0.001, time);
-        gain.gain.linearRampToValueAtTime(gainLevel, time + duration * 0.22);
-        gain.gain.setValueAtTime(gainLevel * 0.9, time + duration * 0.7);
-        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-      }
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterFilter);
-
-      osc1.start(time);
-      osc2.start(time);
-      osc1.stop(time + duration);
-      osc2.stop(time + duration);
-    }
-
-    function synthTimpani(ctx, time, baseFreq = 80, duration = 0.65, gainLevel = 0.8) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(baseFreq * 1.5, time);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.45, time + duration);
-      gain.gain.setValueAtTime(gainLevel, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-      osc.connect(gain);
-      gain.connect(masterFilter);
-      osc.start(time);
-      osc.stop(time + duration);
-    }
-
-    function synthSnare(ctx, time, duration = 0.2, isRim = false) {
-      const bufferSize = ctx.sampleRate * duration;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(isRim ? 3400 : 2100, time);
-      filter.Q.setValueAtTime(2.4, time);
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.32, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(masterFilter);
-      noise.start(time);
-    }
-
-    function synthBell(ctx, time, freq, duration = 2.4, level = 0.38) {
-      const carrier = ctx.createOscillator();
-      const mod = ctx.createOscillator();
-      const modGain = ctx.createGain();
-      const env = ctx.createGain();
-
-      carrier.type = 'sine';
-      carrier.frequency.setValueAtTime(freq, time);
-      mod.type = 'sine';
-      mod.frequency.setValueAtTime(freq * 2.756, time);
-      modGain.gain.setValueAtTime(freq * 1.6, time);
-      modGain.gain.exponentialRampToValueAtTime(1, time + duration);
-
-      env.gain.setValueAtTime(level, time);
-      env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-      mod.connect(modGain);
-      modGain.connect(carrier.frequency);
-      carrier.connect(env);
-      env.connect(masterFilter);
-
-      carrier.start(time);
-      mod.start(time);
-      carrier.stop(time + duration);
-      mod.stop(time + duration);
-    }
-
-    function synthOrgan(ctx, time, freq, duration, level = 0.22) {
-      [freq, freq * 1.5, freq * 2].forEach((f, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = i === 0 ? 'sawtooth' : 'triangle';
-        osc.frequency.setValueAtTime(f, time);
-
-        gain.gain.setValueAtTime(0.001, time);
-        gain.gain.linearRampToValueAtTime(level / (i + 1), time + 0.05);
-        gain.gain.setValueAtTime((level / (i + 1)) * 0.9, time + duration - 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-
-        osc.connect(gain);
-        gain.connect(masterFilter);
-        osc.start(time);
-        osc.stop(time + duration);
-      });
-    }
-
-    /* Track Schedulers */
-    function clearPlaybackTimers() {
-      activeTimers.forEach(id => clearTimeout(id));
-      activeTimers = [];
-      if (loopTimerInterval) clearInterval(loopTimerInterval);
-    }
-
-    function stopAllPlayback() {
-      clearPlaybackTimers();
-      isPlaying = false;
-      currentPlayingId = null;
-      currentPlayingVer = null;
-
-      document.querySelectorAll('.btn-play-version').forEach(btn => {
-        btn.classList.remove('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
-        btn.classList.add('bg-slate-800', 'text-slate-200');
-        const label = btn.querySelector('.play-label');
-        if (label) label.textContent = '재생';
-      });
-
-      document.getElementById('current-track-badge').textContent = '선택된 트랙 없음 (대기 중)';
-      document.getElementById('current-loop-timer').textContent = 'Loop: 00s';
-      document.getElementById('canvas-overlay').classList.remove('hidden');
-
-      const dot = document.getElementById('global-status-dot');
-      const text = document.getElementById('global-status-text');
-      dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
-      text.className = "text-slate-400 font-medium";
-      text.textContent = "정지됨 (Stopped)";
-    }
-
-    async function playTrackVersion(trackId, ver) {
-      const ctx = await ensureAudioReady();
-
-      if (isPlaying && currentPlayingId === trackId && currentPlayingVer === ver) {
-        stopAllPlayback();
-        return;
-      }
-
-      clearPlaybackTimers();
-      isPlaying = true;
-      currentPlayingId = trackId;
-      currentPlayingVer = ver;
-
-      const trackInfo = TRACK_METADATA.find(t => t.id === trackId);
-
-      document.querySelectorAll('.btn-play-version').forEach(btn => {
-        btn.classList.remove('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
-        btn.classList.add('bg-slate-800', 'text-slate-200');
-        const label = btn.querySelector('.play-label');
-        if (label) label.textContent = '재생';
-      });
-
-      const activeBtn = document.getElementById(`btn-${trackId}-${ver}`);
-      if (activeBtn) {
-        activeBtn.classList.remove('bg-slate-800', 'text-slate-200');
-        activeBtn.classList.add('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300', 'shadow-amber-500/50');
-        const label = activeBtn.querySelector('.play-label');
-        if (label) label.textContent = '정지';
-      }
-
-      document.getElementById('current-track-badge').textContent = `#${String(trackId).padStart(2,'0')}. ${trackInfo.title} [Ver ${ver}]`;
-      document.getElementById('canvas-overlay').classList.add('hidden');
-
-      const dot = document.getElementById('global-status-dot');
-      const text = document.getElementById('global-status-text');
-      dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50 animate-pulse";
-      text.className = "text-emerald-300 font-medium";
-      text.textContent = `연주 중: #${trackId} [Ver ${ver}]`;
-
-      loopStartTime = Date.now();
-      loopTimerInterval = setInterval(() => {
-        if (!isPlaying) return;
-        const elapsed = Math.floor((Date.now() - loopStartTime) / 1000);
-        document.getElementById('current-loop-timer').textContent = `Loop: ${String(elapsed % Math.round(loopSeconds)).padStart(2,'0')}s / ${Math.round(loopSeconds)}s`;
-      }, 500);
-
-      runTrackScheduler(trackId, ver);
-    }
-
-    function runTrackScheduler(id, ver) {
-      if (!isPlaying || currentPlayingId !== id || currentPlayingVer !== ver) return;
-      const ctx = getAudioContext();
-      const now = ctx.currentTime + 0.05;
-
-      let loopDuration = 30.0;
-      switch(id) {
-        case 1: loopDuration = scheduleTheme01(ctx, now, ver); break;
-        case 2: loopDuration = scheduleTheme02(ctx, now, ver); break;
-        case 3: loopDuration = scheduleTheme03(ctx, now, ver); break;
-        case 4: loopDuration = scheduleTheme04(ctx, now, ver); break;
-        case 5: loopDuration = scheduleTheme05(ctx, now, ver); break;
-        case 6: loopDuration = scheduleTheme06(ctx, now, ver); break;
-        case 7: loopDuration = scheduleTheme07(ctx, now, ver); break;
-        case 8: loopDuration = scheduleTheme08(ctx, now, ver); break;
-        case 9: loopDuration = scheduleTheme09(ctx, now, ver); break;
-        case 10: loopDuration = scheduleTheme10(ctx, now, ver); break;
-        case 11: loopDuration = scheduleTheme11(ctx, now, ver); break;
-        case 12: loopDuration = scheduleTheme12(ctx, now, ver); break;
-      }
-      loopSeconds = loopDuration;
-
-      const timer = setTimeout(() => {
-        runTrackScheduler(id, ver);
-      }, (loopDuration - 0.08) * 1000);
-      activeTimers.push(timer);
-    }
-
-    // 01. Echoes of Arca
-    function scheduleTheme01(ctx, start, ver) {
-      const bpm = ver === 'A' ? 72 : (ver === 'B' ? 68 : 76);
-      const b = 60 / bpm;
-      const totalBeats = 36;
-      const prog = [
-        { beat: 0, r: "D3", p: ["D3", "F#3", "A3"] },
-        { beat: 4, r: "B2", p: ["B2", "D3", "F#3"] },
-        { beat: 8, r: "G2", p: ["G2", "B2", "D3"] },
-        { beat: 12, r: "A2", p: ["A2", "C#3", "E3"] },
-        { beat: 16, r: "D3", p: ["D3", "F#3", "A3"] },
-        { beat: 20, r: "G2", p: ["G2", "B2", "D3"] },
-        { beat: 24, r: "E2", p: ["E2", "G3", "B3"] },
-        { beat: 28, r: "A2", p: ["A2", "C#3", "E3"] }
-      ];
-      prog.forEach(c => {
-        synthStrings(ctx, start + c.beat * b, P[c.r], b * 3.8, false, 0.22);
-        c.p.forEach((note, idx) => {
-          synthPluck(ctx, start + (c.beat + idx * 0.5) * b, P[note], b * 2, ver === 'C' ? 1.2 : 0.7);
-        });
-      });
-      const melody = [
-        { beat: 0, note: "D4", d: 1.5 }, { beat: 2, note: "F#4", d: 1.5 },
-        { beat: 4, note: "A4", d: 2.0 }, { beat: 6.5, note: "B4", d: 1.2 },
-        { beat: 8, note: "A4", d: 2.0 }, { beat: 10, note: "F#4", d: 1.5 },
-        { beat: 12, note: "G4", d: 1.5 }, { beat: 14, note: "E4", d: 1.2 },
-        { beat: 16, note: "D4", d: 2.0 }, { beat: 18, note: "A4", d: 1.5 },
-        { beat: 20, note: "B4", d: 2.0 }, { beat: 22.5, note: "C#5", d: 1.5 },
-        { beat: 24, note: "D5", d: 2.5 }, { beat: 27, note: "A4", d: 1.2 },
-        { beat: 28, note: "F#4", d: 1.5 }, { beat: 30, note: "E4", d: 1.5 }, { beat: 32, note: "D4", d: 3.5 }
-      ];
-      melody.forEach(m => {
-        if (ver === 'A') {
-          synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.36);
-          synthHorn(ctx, start + (m.beat + 0.04) * b, P[m.note] * 0.5, m.d * b * 0.9, 0.2);
-        } else if (ver === 'B') {
-          synthPluck(ctx, start + m.beat * b, P[m.note], m.d * b * 1.2, 0.9);
-          synthFlute(ctx, start + (m.beat + 0.02) * b, P[m.note], m.d * b, 0.28);
-        } else {
-          synthPluck(ctx, start + m.beat * b, P[m.note] * 2, m.d * b * 0.8, 1.3);
-          synthHorn(ctx, start + m.beat * b, P[m.note], m.d * b, 0.34, 1.2);
-        }
-      });
-      for (let beat = 0; beat < totalBeats; beat += 4) {
-        synthTimpani(ctx, start + beat * b, 70, b * 1.5, ver === 'C' ? 0.9 : 0.65);
-      }
-      return b * totalBeats;
-    }
-
-    // 02. Roads Beyond the Kingdom
-    function scheduleTheme02(ctx, start, ver) {
-      const bpm = ver === 'A' ? 104 : (ver === 'B' ? 98 : 110);
-      const b = 60 / bpm;
-      const totalBeats = 52;
-      for (let beat = 0; beat < totalBeats; beat++) {
-        const root = beat % 8 < 4 ? "G3" : "C3";
-        if (ver === 'A') synthPluck(ctx, start + beat * b, P[root], b * 0.8, 0.7);
-        else if (ver === 'B') synthStrings(ctx, start + beat * b, P[root], b * 0.6, true, 0.28);
-        else synthPluck(ctx, start + beat * b, P[root] * 1.5, b * 0.5, 1.2);
-        if (beat % 2 === 1) synthSnare(ctx, start + beat * b, 0.12, true);
-      }
-      const melody = [
-        { beat: 0, note: "G4" }, { beat: 2, note: "A4" }, { beat: 4, note: "B4" }, { beat: 7, note: "D5" },
-        { beat: 9, note: "C5" }, { beat: 11, note: "B4" }, { beat: 14, note: "A4" }, { beat: 16, note: "G4" },
-        { beat: 20, note: "B4" }, { beat: 22, note: "C5" }, { beat: 24, note: "D5" }, { beat: 27, note: "E5" },
-        { beat: 29, note: "D5" }, { beat: 32, note: "B4" }, { beat: 36, note: "A4" }, { beat: 40, note: "G4" },
-        { beat: 44, note: "F#4" }, { beat: 48, note: "G4" }
-      ];
-      melody.forEach(m => {
-        synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.4, 0.38);
-        if (ver === 'C') synthPluck(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, b * 0.8, 0.8);
-      });
-      return b * totalBeats;
-    }
-
-    // 03. A Quiet Day in Town
-    function scheduleTheme03(ctx, start, ver) {
-      const bpm = ver === 'A' ? 84 : (ver === 'B' ? 78 : 88);
-      const b = 60 / bpm;
-      const totalBeats = 40;
-      const bassNotes = ["C2", "G2", "A2", "F2", "C2", "E2", "F2", "G2"];
-      bassNotes.forEach((note, i) => synthPluck(ctx, start + i * 4 * b, P[note], b * 3, 0.75));
-      const melody = [
-        { beat: 0, note: "E4" }, { beat: 2, note: "G4" }, { beat: 4, note: "C5" }, { beat: 6, note: "B4" },
-        { beat: 8, note: "A4" }, { beat: 12, note: "G4" }, { beat: 16, note: "F4" }, { beat: 18, note: "E4" },
-        { beat: 20, note: "D4" }, { beat: 24, note: "C4" }, { beat: 28, note: "E4" }, { beat: 30, note: "G4" },
-        { beat: 32, note: "A4" }, { beat: 34, note: "B4" }, { beat: 36, note: "C5" }
-      ];
-      melody.forEach(m => {
-        if (ver === 'A') synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.5, 0.35);
-        else if (ver === 'B') synthPluck(ctx, start + m.beat * b, P[m.note], b * 1.1, 0.9);
-        else synthBell(ctx, start + m.beat * b, P[m.note], b * 2, 0.28);
-      });
-      return b * totalBeats;
-    }
-
-    // 04. Blades of the Young
-    function scheduleTheme04(ctx, start, ver) {
-      const bpm = ver === 'A' ? 130 : (ver === 'B' ? 126 : 134);
-      const b = 60 / bpm;
-      const totalBeats = 64;
-      for (let i = 0; i < totalBeats; i++) {
-        const step = i % 8;
-        const note = step === 0 || step === 3 || step === 6 ? "A2" : "C3";
-        synthStrings(ctx, start + (i * b * 0.5), P[note], b * 0.45, true, 0.32);
-      }
-      for (let beat = 0; beat < totalBeats; beat++) {
-        if (beat % 4 === 0) synthTimpani(ctx, start + beat * b, 92, 0.32, 0.75);
-        if (beat % 2 === 1) synthSnare(ctx, start + beat * b, 0.16);
-      }
-      const lead = [
-        { beat: 0, note: "A4" }, { beat: 3, note: "C5" }, { beat: 6, note: "B4" }, { beat: 8, note: "A4" },
-        { beat: 12, note: "E5" }, { beat: 16, note: "D5" }, { beat: 20, note: "C5" }, { beat: 24, note: "B4" },
-        { beat: 28, note: "G4" }, { beat: 32, note: "A4" }, { beat: 36, note: "C5" }, { beat: 40, note: "E5" },
-        { beat: 44, note: "G5" }, { beat: 48, note: "F5" }, { beat: 52, note: "E5" }, { beat: 56, note: "D5" }, { beat: 60, note: "A4" }
-      ];
-      lead.forEach(m => {
-        synthHorn(ctx, start + m.beat * b, P[m.note], b * 1.5, 0.32, ver === 'C' ? 1.3 : 1.0);
-        if (ver === 'A' || ver === 'C') synthFlute(ctx, start + m.beat * b, P[m.note], b * 1.2, 0.25);
-      });
-      return b * totalBeats;
-    }
-
-    // 05. March of the Broken Banner
-    function scheduleTheme05(ctx, start, ver) {
-      const bpm = ver === 'A' ? 118 : (ver === 'B' ? 112 : 122);
-      const b = 60 / bpm;
-      const totalBeats = 56;
-      for (let beat = 0; beat < totalBeats; beat++) {
-        const root = beat % 16 < 8 ? "E2" : "C2";
-        synthStrings(ctx, start + beat * b, P[root], b * 0.9, false, 0.25);
-        synthSnare(ctx, start + beat * b, 0.16, beat % 2 === 0);
-        if (beat % 4 === 0) synthTimpani(ctx, start + beat * b, 75, 0.45, 0.85);
-      }
-      const brassLead = [
-        { beat: 0, note: "E4" }, { beat: 4, note: "G4" }, { beat: 8, note: "F#4" }, { beat: 12, note: "E4" },
-        { beat: 16, note: "B4" }, { beat: 20, note: "A4" }, { beat: 24, note: "G4" }, { beat: 28, note: "F#4" },
-        { beat: 32, note: "E4" }, { beat: 36, note: "G4" }, { beat: 40, note: "B4" }, { beat: 44, note: "C5" }, { beat: 48, note: "B4" }
-      ];
-      brassLead.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 2.2, 0.36, ver === 'B' ? 1.2 : 0.9));
-      return b * totalBeats;
-    }
-
-    // 06. When Kingdoms Fall
-    function scheduleTheme06(ctx, start, ver) {
-      const bpm = ver === 'A' ? 142 : (ver === 'B' ? 136 : 146);
-      const b = 60 / bpm;
-      const totalBeats = 68;
-      for (let i = 0; i < totalBeats; i++) {
-        const note = i % 4 === 0 ? "C3" : (i % 4 === 2 ? "Eb3" : "G2");
-        synthStrings(ctx, start + i * b * 0.5, P[note], b * 0.35, true, 0.3);
-      }
-      for (let beat = 0; beat < totalBeats; beat += 2) {
-        synthTimpani(ctx, start + beat * b, 86, 0.28, 0.9);
-        synthSnare(ctx, start + (beat + 1) * b, 0.18);
-      }
-      if (ver === 'C') synthOrgan(ctx, start, P["C3"], b * totalBeats, 0.22);
-      const melody = [
-        { beat: 0, note: "C5" }, { beat: 3, note: "Eb5" }, { beat: 6, note: "D5" }, { beat: 8, note: "C5" },
-        { beat: 12, note: "Ab4" }, { beat: 16, note: "G4" }, { beat: 20, note: "Eb4" }, { beat: 24, note: "F4" },
-        { beat: 32, note: "C5" }, { beat: 36, note: "D5" }, { beat: 40, note: "Eb5" }, { beat: 44, note: "F5" },
-        { beat: 48, note: "G5" }, { beat: 52, note: "Eb5" }, { beat: 56, note: "D5" }, { beat: 60, note: "C5" }
-      ];
-      melody.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 1.8, 0.38, 1.15));
-      return b * totalBeats;
-    }
-
-    // 07. Awakened Colossus
-    function scheduleTheme07(ctx, start, ver) {
-      const bpm = ver === 'A' ? 116 : (ver === 'B' ? 120 : 112);
-      const b = 60 / bpm;
-      const totalBeats = 56;
-      synthBell(ctx, start, P["D3"], 4.5, 0.5);
-      synthBell(ctx, start + 16 * b, P["Eb3"], 4.5, 0.5);
-      synthBell(ctx, start + 32 * b, P["D3"], 4.5, 0.5);
-      for (let beat = 0; beat < totalBeats; beat += 4) {
-        synthTimpani(ctx, start + beat * b, 58, 0.85, 0.95);
-        synthHorn(ctx, start + beat * b, P["D2"], b * 2.8, 0.34);
-      }
-      if (ver === 'B' || ver === 'C') synthOrgan(ctx, start, P["D3"], b * totalBeats, 0.22);
-      const colossusMotif = [
-        { beat: 4, note: "D4" }, { beat: 8, note: "Eb4" }, { beat: 12, note: "D4" },
-        { beat: 16, note: "C4" }, { beat: 20, note: "Bb3" }, { beat: 24, note: "C#4" },
-        { beat: 32, note: "D4" }, { beat: 36, note: "F4" }, { beat: 40, note: "Eb4" },
-        { beat: 44, note: "D4" }, { beat: 48, note: "C#4" }, { beat: 52, note: "D4" }
-      ];
-      colossusMotif.forEach(m => synthHorn(ctx, start + m.beat * b, P[m.note], b * 2.2, 0.38, 1.25));
-      return b * totalBeats;
-    }
-
-    // 08. Memories We Left Behind
-    function scheduleTheme08(ctx, start, ver) {
-      const bpm = ver === 'A' ? 60 : (ver === 'B' ? 56 : 64);
-      const b = 60 / bpm;
-      const totalBeats = 30;
-      synthStrings(ctx, start, P["B2"], b * 15, false, 0.22);
-      synthStrings(ctx, start + 15 * b, P["G2"], b * 15, false, 0.22);
-      const sadLeitmotif = [
-        { beat: 0, note: "B4", d: 2.5 }, { beat: 4, note: "D5", d: 2.0 },
-        { beat: 8, note: "F#5", d: 3.0 }, { beat: 12, note: "E5", d: 2.0 },
-        { beat: 15, note: "D5", d: 2.0 }, { beat: 18, note: "C#5", d: 2.0 },
-        { beat: 21, note: "B4", d: 3.0 }, { beat: 25, note: "F#4", d: 2.0 }, { beat: 27, note: "B4", d: 3.0 }
-      ];
-      sadLeitmotif.forEach(m => {
-        if (ver === 'A') {
-          synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.32);
-          synthPluck(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, m.d * b, 0.55);
-        } else if (ver === 'B') {
-          synthStrings(ctx, start + m.beat * b, P[m.note], m.d * b, false, 0.28);
-          synthPluck(ctx, start + (m.beat + 0.1) * b, P[m.note], m.d * b * 0.8, 0.7);
-        } else {
-          synthBell(ctx, start + m.beat * b, P[m.note], m.d * b, 0.28);
-          synthFlute(ctx, start + (m.beat + 0.04) * b, P[m.note], m.d * b, 0.26);
-        }
-      });
-      return b * totalBeats;
-    }
-
-    // 09. Whispers Beneath the Ruins
-    function scheduleTheme09(ctx, start, ver) {
-      const bpm = ver === 'A' ? 76 : (ver === 'B' ? 72 : 80);
-      const b = 60 / bpm;
-      const totalBeats = 38;
-      const chimes = [
-        { beat: 0, note: "F#5" }, { beat: 4, note: "A#5" }, { beat: 8, note: "C#6" },
-        { beat: 12, note: "B5" }, { beat: 16, note: "G#5" }, { beat: 20, note: "F#5" },
-        { beat: 26, note: "D#5" }, { beat: 30, note: "E5" }, { beat: 34, note: "F#5" }
-      ];
-      chimes.forEach(c => {
-        synthBell(ctx, start + c.beat * b, P[c.note], 3.2, 0.36);
-        synthPluck(ctx, start + (c.beat + 0.1) * b, P[c.note] * 0.5, 1.4, 0.65);
-      });
-      synthFlute(ctx, start, P["F#3"], b * 18, 0.18);
-      synthFlute(ctx, start + 18 * b, P["D3"], b * 18, 0.18);
-      return b * totalBeats;
-    }
-
-    // 10. Raise the Banner
-    function scheduleTheme10(ctx, start, ver) {
-      const bpm = ver === 'A' ? 124 : (ver === 'B' ? 128 : 120);
-      const b = 60 / bpm;
-      const totalBeats = 56;
-      const fanfare = [
-        { beat: 0, note: "Bb4", d: 1.0 }, { beat: 2, note: "D5", d: 1.0 },
-        { beat: 4, note: "F5", d: 2.0 }, { beat: 8, note: "D5", d: 1.0 },
-        { beat: 10, note: "F5", d: 1.0 }, { beat: 12, note: "Bb5", d: 4.0 },
-        { beat: 20, note: "F5", d: 1.5 }, { beat: 23, note: "G5", d: 1.5 },
-        { beat: 26, note: "A5", d: 1.5 }, { beat: 29, note: "Bb5", d: 3.5 },
-        { beat: 36, note: "D5", d: 2.0 }, { beat: 40, note: "F5", d: 2.0 }, { beat: 44, note: "Bb5", d: 6.0 }
-      ];
-      fanfare.forEach(f => synthHorn(ctx, start + f.beat * b, P[f.note], f.d * b, 0.42, 1.25));
-      for (let beat = 0; beat < 12; beat++) synthSnare(ctx, start + beat * b, 0.14);
-      synthTimpani(ctx, start, 90, 0.45, 0.8);
-      synthTimpani(ctx, start + 12 * b, 110, 0.8, 0.9);
-      synthTimpani(ctx, start + 44 * b, 110, 1.2, 0.95);
-      return b * totalBeats;
-    }
-
-    // 11. The Last Arca
-    function scheduleTheme11(ctx, start, ver) {
-      const bpm = ver === 'A' ? 140 : (ver === 'B' ? 146 : 138);
-      const b = 60 / bpm;
-      const totalBeats = 70;
-      for (let i = 0; i < totalBeats; i++) {
-        const note = i % 4 === 0 ? "D2" : "A2";
-        synthStrings(ctx, start + i * b * 0.5, P[note], b * 0.35, true, 0.32);
-      }
-      for (let beat = 0; beat < totalBeats; beat += 2) {
-        synthTimpani(ctx, start + beat * b, 95, 0.3, 0.9);
-        synthSnare(ctx, start + (beat + 1) * b, 0.2);
-      }
-      if (ver === 'B' || ver === 'C') synthOrgan(ctx, start, P["D3"], b * totalBeats, 0.24);
-      const finalMelody = [
-        { beat: 0, note: "D5", d: 2.0 }, { beat: 3, note: "F5", d: 2.0 },
-        { beat: 6, note: "A5", d: 2.5 }, { beat: 10, note: "Bb5", d: 1.5 },
-        { beat: 13, note: "A5", d: 2.0 }, { beat: 16, note: "F#5", d: 2.5 },
-        { beat: 20, note: "G5", d: 2.0 }, { beat: 23, note: "E5", d: 1.5 }, { beat: 26, note: "D5", d: 3.0 },
-        { beat: 34, note: "D5", d: 2.0 }, { beat: 38, note: "F#5", d: 2.0 },
-        { beat: 42, note: "A5", d: 3.0 }, { beat: 46, note: "B5", d: 2.5 },
-        { beat: 50, note: "C#6", d: 2.5 }, { beat: 54, note: "D6", d: 6.0 }
-      ];
-      finalMelody.forEach(m => {
-        synthHorn(ctx, start + m.beat * b, P[m.note], m.d * b, 0.42, 1.3);
-        synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b, 0.3);
-      });
-      return b * totalBeats;
-    }
-
-    // 12. Where Our Journey Ends
-    function scheduleTheme12(ctx, start, ver) {
-      const bpm = ver === 'A' ? 68 : (ver === 'B' ? 64 : 72);
-      const b = 60 / bpm;
-      const totalBeats = 34;
-      synthStrings(ctx, start, P["D3"], b * totalBeats, false, 0.25);
-      const arpeggio = ["D3", "F#3", "A3", "D4", "F#4", "A4"];
-      for (let i = 0; i < totalBeats; i++) {
-        const note = arpeggio[i % arpeggio.length];
-        synthPluck(ctx, start + i * b, P[note], b * 1.5, 0.7);
-      }
-      const endingMelody = [
-        { beat: 0, note: "D4", d: 2.5 }, { beat: 3, note: "F#4", d: 2.0 },
-        { beat: 6, note: "A4", d: 2.5 }, { beat: 9, note: "B4", d: 2.0 },
-        { beat: 12, note: "A4", d: 2.5 }, { beat: 15, note: "F#4", d: 2.0 },
-        { beat: 18, note: "G4", d: 2.0 }, { beat: 20.5, note: "E4", d: 1.5 },
-        { beat: 22.5, note: "D4", d: 3.5 }, { beat: 27, note: "A4", d: 2.0 }, { beat: 30, note: "D5", d: 4.0 }
-      ];
-      endingMelody.forEach(m => {
-        synthFlute(ctx, start + m.beat * b, P[m.note], m.d * b * 1.1, 0.38);
-        synthHorn(ctx, start + (m.beat + 0.05) * b, P[m.note] * 0.5, m.d * b, 0.24);
-      });
-      return b * totalBeats;
-    }
-
-    /* Render UI Cards */
-    function renderTrackCards() {
-      const container = document.getElementById('tracks-container');
-      container.innerHTML = '';
-
-      TRACK_METADATA.forEach((t) => {
-        const isLeit = t.leitmotif;
-        const currentChoice = userSelections[t.id];
-
-        const card = document.createElement('div');
-        card.className = `glass-card rounded-2xl p-4 sm:p-5 border border-slate-800 flex flex-col justify-between transition-all duration-300 relative ${isLeit ? 'border-amber-600/35 bg-amber-950/15' : ''}`;
-        card.id = `card-${t.id}`;
-
-        card.innerHTML = `
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">#${String(t.id).padStart(2,'0')}</span>
-                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">${t.role}</span>
-              </div>
-              ${isLeit ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/70 border border-amber-600/50 text-amber-200">★ Main Leitmotif</span>' : ''}
-            </div>
-
-            <h3 class="rpg-font text-base sm:text-lg font-bold text-slate-100 mb-1">${t.title}</h3>
-            <p class="text-xs text-amber-400 font-medium mb-3">${t.mood}</p>
-
-            <div class="space-y-2 mb-4">
-              <!-- Version A -->
-              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'A' ? 'bg-amber-950/30 border-amber-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-amber-300">Version A</span>
-                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmA} BPM • ~30s</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button id="btn-${t.id}-A" onclick="playTrackVersion(${t.id}, 'A')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
-                      <svg class="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
-                      <span class="play-label">재생</span>
-                    </button>
-                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
-                      <input type="radio" name="select-ver-${t.id}" value="A" ${currentChoice === 'A' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'A')" class="accent-amber-500 cursor-pointer">
-                      <span class="font-bold">선택</span>
-                    </label>
-                  </div>
-                </div>
-                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descA}</p>
-              </div>
-
-              <!-- Version B -->
-              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'B' ? 'bg-indigo-950/30 border-indigo-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-indigo-300">Version B</span>
-                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmB} BPM • ~30s</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button id="btn-${t.id}-B" onclick="playTrackVersion(${t.id}, 'B')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
-                      <svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
-                      <span class="play-label">재생</span>
-                    </button>
-                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
-                      <input type="radio" name="select-ver-${t.id}" value="B" ${currentChoice === 'B' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'B')" class="accent-indigo-500 cursor-pointer">
-                      <span class="font-bold">선택</span>
-                    </label>
-                  </div>
-                </div>
-                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descB}</p>
-              </div>
-
-              <!-- Version C -->
-              <div class="p-2.5 rounded-xl border transition-all ${currentChoice === 'C' ? 'bg-emerald-950/30 border-emerald-500/50' : 'bg-slate-900/60 border-slate-800/80'}">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-emerald-300">Version C</span>
-                    <span class="text-[10px] text-slate-400 font-mono">${t.bpmC} BPM • ~30s</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button id="btn-${t.id}-C" onclick="playTrackVersion(${t.id}, 'C')" class="btn-play-version px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1 active:scale-95">
-                      <svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
-                      <span class="play-label">재생</span>
-                    </button>
-                    <label class="flex items-center gap-1 cursor-pointer pl-1.5 border-l border-slate-700 text-[11px] text-slate-300">
-                      <input type="radio" name="select-ver-${t.id}" value="C" ${currentChoice === 'C' ? 'checked' : ''} onchange="selectVersion(${t.id}, 'C')" class="accent-emerald-500 cursor-pointer">
-                      <span class="font-bold">선택</span>
-                    </label>
-                  </div>
-                </div>
-                <p class="text-[11px] text-slate-400 line-clamp-2">${t.descC}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-            <span class="text-slate-400">채택된 버전:</span>
-            <span id="chosen-badge-${t.id}" class="font-bold px-2.5 py-0.5 rounded text-[11px] ${currentChoice === 'A' ? 'bg-amber-950 text-amber-300 border border-amber-600/40' : (currentChoice === 'B' ? 'bg-indigo-950 text-indigo-300 border border-indigo-600/40' : 'bg-emerald-950 text-emerald-300 border border-emerald-600/40')}">
-              Version ${currentChoice} 채택됨
-            </span>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function selectVersion(trackId, ver) {
-      userSelections[trackId] = ver;
-      renderTrackCards();
-      showToast(`트랙 #${trackId}의 채택 버전이 [Version ${ver}]로 설정되었습니다.`);
-    }
-
-    /* Standalone Web Audio API Engine Code Generator */
-    function generateCodeExport() {
-      const selectedTrackSummary = TRACK_METADATA.map(t => {
-        const ver = userSelections[t.id];
-        const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
-        const desc = ver === 'A' ? t.descA : (ver === 'B' ? t.descB : t.descC);
-        return `// [#${String(t.id).padStart(2,'0')}] ${t.title} (${t.role}) -> [Version ${ver} 채택, ${bpm} BPM]\n// 분위기: ${t.mood}\n// 편곡: ${desc}`;
-      }).join('\n\n');
-
-      return `/**
- * cnation TACTICS - Standalone Procedural Web Audio Engine
- * Zero-Asset Procedural BGM Engine (External MP3: 0 MB)
-${selectedTrackSummary}
- */
-class TacticsSoundtrackEngine {
-  constructor() {
-    this.ctx = null;
-    this.masterGain = null;
-    this.filterNode = null;
-    this.currentTimer = null;
-    this.currentTrackId = null;
-    this.isPlaying = false;
-    this.P = ${JSON.stringify(P, null, 2)};
-    this.manifest = {
-${TRACK_METADATA.map(t => {
-  const ver = userSelections[t.id];
-  const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
-  return `      ${t.id}: { id: ${t.id}, title: "${t.title}", role: "${t.role}", version: "${ver}", bpm: ${bpm}, scale: "${t.scale}" }`;
-}).join(',\n')}
-    };
-  }
-
-  async init() {
-    if (!this.ctx) {
-      const AudioClass = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioClass();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.75, this.ctx.currentTime);
-      this.filterNode = this.ctx.createBiquadFilter();
-      this.filterNode.type = 'lowpass';
-      this.filterNode.frequency.setValueAtTime(9500, this.ctx.currentTime);
-      this.filterNode.connect(this.masterGain);
-      this.masterGain.connect(this.ctx.destination);
-    }
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
-  }
-
-  setVolume(vol) {
-    if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, vol)), this.ctx.currentTime);
-    }
-  }
-
-  stop() {
-    if (this.currentTimer) {
-      clearTimeout(this.currentTimer);
-      this.currentTimer = null;
-    }
-    this.isPlaying = false;
-    this.currentTrackId = null;
-  }
-
-  async play(trackId) {
-    await this.init();
-    this.stop();
-    this.isPlaying = true;
-    this.currentTrackId = trackId;
-    this.loopCycle(trackId);
-  }
-
-  loopCycle(trackId) {
-    if (!this.isPlaying || this.currentTrackId !== trackId) return;
-    const now = this.ctx.currentTime + 0.05;
-    const track = this.manifest[trackId];
-    if (!track) return;
-
-    const b = 60 / track.bpm;
-    const totalBeats = 36;
-    // Central Leitmotif playback for tracks 1, 8, 11, 12
-    const notes = [
-      { beat: 0, note: "D4", d: 1.5 }, { beat: 2, note: "F#4", d: 1.5 },
-      { beat: 4, note: "A4", d: 2.0 }, { beat: 6.5, note: "B4", d: 1.2 },
-      { beat: 8, note: "A4", d: 2.0 }, { beat: 10, note: "F#4", d: 1.5 },
-      { beat: 12, note: "G4", d: 1.5 }, { beat: 14, note: "E4", d: 1.2 }, { beat: 16, note: "D4", d: 3.0 }
-    ];
-    notes.forEach(m => {
-      this.synthFlute(now + m.beat * b, this.P[m.note], m.d * b, 0.35);
-    });
-
-    const loopDuration = b * totalBeats;
-    this.currentTimer = setTimeout(() => this.loopCycle(trackId), (loopDuration - 0.08) * 1000);
-  }
-
-  synthFlute(time, freq, dur, gainLevel = 0.32) {
-    const osc = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, time);
-    g.gain.setValueAtTime(0.001, time);
-    g.gain.linearRampToValueAtTime(gainLevel, time + 0.06);
-    g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
-    osc.connect(g);
-    g.connect(this.filterNode);
-    osc.start(time);
-    osc.stop(time + dur);
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
   }
 }
-`;
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const geo = {
+  box: new THREE.BoxGeometry(1, 1, 1),
+  ball: new THREE.SphereGeometry(1, 12, 10),
+  cone: new THREE.ConeGeometry(1, 1, 10),
+  cyl: new THREE.CylinderGeometry(1, 1, 1, 10),
+  rock: new THREE.DodecahedronGeometry(1, 0),
+  torus: new THREE.TorusGeometry(1, 0.22, 8, 16)
+};
+
+const sharedMat = new THREE.MeshToonMaterial({ vertexColors: true });
+
+function bake(parts) {
+  const arr = parts.map(p => {
+    const [type, pos, scale, col, rot = 0, rotX = 0, rotY = 0] = p;
+    let g = geo[type].index ? geo[type].toNonIndexed() : geo[type].clone();
+    g.scale(...scale);
+    if (rotX) g.rotateX(rotX);
+    if (rotY) g.rotateY(rotY);
+    if (rot) g.rotateZ(rot);
+    g.translate(...pos);
+    const color = new THREE.Color(col);
+    const a = new Float32Array(g.attributes.position.count * 3);
+    for (let i = 0; i < a.length; i += 3) {
+      a[i] = color.r; a[i + 1] = color.g; a[i + 2] = color.b;
     }
+    g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+    return g;
+  });
+  const m = mergeGeometries(arr, false);
+  arr.forEach(g => g.dispose());
+  return m;
+}
 
-    function openExportModal() {
-      const modal = document.getElementById('export-modal');
-      const pre = document.getElementById('code-snippet-pre');
-      const grid = document.getElementById('modal-summary-grid');
+// ==========================================
+// 1. 적군 투구 모델 3종 (맨얼굴 제거 + 다크 헬름)
+// ==========================================
+function buildEnemyHelmetA() {
+  // 제국 중갑 보병: 풀페이스 슬릿 바이저 + 붉은 안광 + 가시 견갑
+  const p = [], add = (...a) => p.push(a);
+  const armor = 0x3e434c, darkIron = 0x262930, rustRed = 0x6e3535, glowRed = 0xff2e2e;
+  // 다리 & 부츠
+  for (const x of [-0.13, 0.13]) {
+    add('cyl', [x, 0.16, 0], [0.085, 0.28, 0.095], darkIron);
+    add('box', [x, 0.05, 0.05], [0.15, 0.1, 0.23], 0x1d1f24);
+  }
+  // 몸통 & 어두운 스커트 갑주
+  add('cone', [0, 0.36, -0.02], [0.34, 0.52, 0.27], rustRed);
+  add('box', [0, 0.54, 0], [0.42, 0.44, 0.3], armor);
+  add('box', [0, 0.55, 0.16], [0.32, 0.36, 0.06], darkIron);
+  // 칙칙한 가시 견갑 & 팔
+  for (const x of [-0.3, 0.3]) {
+    add('box', [x, 0.67, 0], [0.22, 0.18, 0.32], darkIron);
+    add('cone', [x * 1.15, 0.82, 0], [0.06, 0.18, 0.06], 0x575c66, x < 0 ? 0.35 : -0.35);
+    add('cyl', [x, 0.46, 0.02], [0.07, 0.34, 0.07], armor, x > 0 ? 0.15 : -0.15);
+  }
+  // 풀페이스 철제 버킷 투구 (피부 노출 0%)
+  add('cyl', [0, 0.91, 0], [0.25, 0.34, 0.25], armor);
+  add('ball', [0, 1.06, 0], [0.25, 0.14, 0.25], darkIron);
+  add('box', [0, 0.88, 0.15], [0.34, 0.26, 0.18], darkIron); // 안면 마스크
+  // 붉은 일자형 바이저 안광
+  add('box', [0, 0.93, 0.245], [0.26, 0.045, 0.02], glowRed);
+  // 숨구멍 슬릿
+  for (const y of [0.83, 0.78]) add('box', [0, y, 0.245], [0.18, 0.018, 0.02], 0x111317);
+  // 투구 뿔 장식
+  for (const x of [-0.22, 0.22]) add('cone', [x, 1.14, 0.02], [0.06, 0.24, 0.06], rustRed, x < 0 ? 0.45 : -0.45);
+  // 흑철 방패 & 창
+  add('box', [-0.42, 0.48, 0.16], [0.36, 0.56, 0.08], darkIron);
+  add('box', [-0.42, 0.48, 0.21], [0.26, 0.44, 0.03], rustRed);
+  add('cyl', [0.39, 0.68, 0.1], [0.045, 1.05, 0.045], 0x4a3c31);
+  add('cone', [0.39, 1.28, 0.1], [0.09, 0.32, 0.08], 0x7b828a);
+  return { parts: p, team: 'enemy' };
+}
 
-      grid.innerHTML = '';
-      TRACK_METADATA.forEach(t => {
-        const ver = userSelections[t.id];
-        const bpm = ver === 'A' ? t.bpmA : (ver === 'B' ? t.bpmB : t.bpmC);
-        const item = document.createElement('div');
-        item.className = "p-2 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-between";
-        item.innerHTML = `
-          <div>
-            <span class="font-bold text-slate-200">#${String(t.id).padStart(2,'0')}. ${t.title}</span>
-            <span class="text-[10px] text-slate-400 block">${t.role}</span>
-          </div>
-          <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded ${ver === 'A' ? 'bg-amber-950 text-amber-300 border border-amber-600/40' : (ver === 'B' ? 'bg-indigo-950 text-indigo-300 border border-indigo-600/40' : 'bg-emerald-950 text-emerald-300 border border-emerald-600/40')}">
-            Ver ${ver} (${bpm}BPM)
-          </span>
-        `;
-        grid.appendChild(item);
-      });
+function buildEnemyHelmetB() {
+  // 강철 척후병: T자형 다크 바이저 + 정수리 볏 + 두 개의 붉은 안광
+  const p = [], add = (...a) => p.push(a);
+  const slate = 0x45525c, charcoal = 0x283036, bronze = 0x6e6250, glowRed = 0xff3b30;
+  for (const x of [-0.12, 0.12]) {
+    add('cyl', [x, 0.16, 0], [0.08, 0.28, 0.085], charcoal);
+    add('box', [x, 0.05, 0.05], [0.14, 0.09, 0.22], 0x1c2226);
+  }
+  add('cyl', [0, 0.48, 0], [0.24, 0.5, 0.22], slate);
+  add('box', [0, 0.56, 0.13], [0.38, 0.42, 0.14], charcoal);
+  for (const x of [-0.32, 0.32]) {
+    add('rock', [x, 0.72, 0], [0.18, 0.15, 0.2], charcoal);
+    add('cyl', [x, 0.47, 0.04], [0.068, 0.34, 0.068], slate);
+  }
+  // 바뷰트(T자형) 투구
+  add('ball', [0, 0.93, 0], [0.26, 0.28, 0.26], slate);
+  add('box', [0, 0.87, 0.14], [0.35, 0.27, 0.2], charcoal);
+  // T자형 검은 슬릿 + 붉은 두 눈
+  add('box', [0, 0.92, 0.245], [0.26, 0.055, 0.02], 0x0e1114);
+  add('box', [0, 0.83, 0.245], [0.055, 0.18, 0.02], 0x0e1114);
+  for (const x of [-0.08, 0.08]) add('ball', [x, 0.92, 0.25], [0.032, 0.024, 0.02], glowRed);
+  // 투구 정수리 강철 볏
+  add('box', [0, 1.16, -0.02], [0.06, 0.22, 0.34], bronze);
+  add('cone', [0, 1.31, 0.04], [0.07, 0.22, 0.12], charcoal);
+  // 흑철 대검
+  add('box', [0.38, 0.62, 0.12], [0.1, 0.82, 0.05], 0x6f7a80);
+  add('cone', [0.38, 1.09, 0.12], [0.09, 0.22, 0.05], 0x6f7a80);
+  add('box', [0.38, 0.24, 0.12], [0.26, 0.06, 0.1], bronze);
+  return { parts: p, team: 'enemy' };
+}
 
-      pre.textContent = generateCodeExport();
-      modal.classList.remove('hidden');
+function buildEnemyHelmetC() {
+  // 사막 궁수 (브란과 헷갈리지 않는 암흑 복면 + 외눈 붉은 고글 + 칙칙한 망토)
+  const p = [], add = (...a) => p.push(a);
+  consthood = 0x4a3f37, mask = 0x24201e, cloth = 0x695846, glowRed = 0xff453a;
+  for (const x of [-0.11, 0.11]) {
+    add('cyl', [x, 0.15, 0], [0.075, 0.26, 0.08], mask);
+    add('box', [x, 0.04, 0.05], [0.13, 0.08, 0.2], mask);
+  }
+  add('cone', [0, 0.42, -0.03], [0.34, 0.62, 0.28], cloth);
+  add('box', [0, 0.54, 0.12], [0.34, 0.38, 0.12], 0x3b322c);
+  // X자 가슴 가죽끈
+  add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, 0.65);
+  add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, -0.65);
+  // 검은 철제 안면 마스크 + 뾰족한 잿빛 두건 (살구색 피부 완전히 제거)
+  add('ball', [0, 0.88, 0], [0.24, 0.25, 0.24], mask);
+  add('cone', [0, 1.12, -0.04], [0.34, 0.46, 0.32], hood);
+  add('box', [0, 0.99, 0.16], [0.38, 0.08, 0.18], hood); // 깊게 눌러쓴 후드 챙
+  // 붉은 저격수 외눈 렌즈 + 작은 보조 렌즈
+  add('cyl', [-0.07, 0.89, 0.23], [0.055, 0.04, 0.055], glowRed, 0, Math.PI / 2);
+  add('ball', [0.09, 0.89, 0.23], [0.025, 0.025, 0.02], glowRed);
+  // 석궁
+  for (const x of [-0.28, 0.28]) add('cyl', [x, 0.49, 0.05], [0.065, 0.32, 0.065], hood);
+  add('box', [0.4, 0.5, 0.15], [0.46, 0.07, 0.1], 0x3d312a);
+  add('box', [0.54, 0.5, 0.18], [0.07, 0.34, 0.07], 0x736354);
+  return { parts: p, team: 'enemy' };
+}
+
+// ==========================================
+// 2. 주인공 고정밀(High-Detail) 모델 2종
+// ==========================================
+function buildHighDetailKyle() {
+  const p = [], add = (...a) => p.push(a);
+  const skin = 0xf4cfa8, tunic = 0x2d7fa3, darkBlue = 0x1b4965, silver = 0xdce6ea, gold = 0xe8c166, hair = 0x7a4928, boot = 0x4a372b;
+
+  // 1) 다리, 무릎 보호대, 부츠 밑창
+  for (const s of [-1, 1]) {
+    const x = s * 0.125;
+    add('cyl', [x, 0.24, 0], [0.078, 0.22, 0.082], 0x324a5e); // 허벅지 바지
+    add('cyl', [x, 0.12, 0.01], [0.082, 0.18, 0.09], boot); // 가죽 부츠
+    add('box', [x, 0.035, 0.05], [0.135, 0.07, 0.21], 0x2b211b); // 부츠 발코
+    add('box', [x, 0.18, 0.085], [0.1, 0.06, 0.04], gold); // 부츠 금장 버클
+    add('ball', [x, 0.23, 0.08], [0.065, 0.065, 0.04], silver); // 은빛 무릎 보호대
+  }
+
+  // 2) 튜닉 코트 자락 & 벨트 + 금장 버클
+  add('cone', [0, 0.38, 0], [0.31, 0.36, 0.24], tunic);
+  add('box', [0, 0.34, 0.14], [0.14, 0.26, 0.04], 0xf2efe4); // 전면 흰색 태바드 휘장
+  add('box', [0, 0.34, 0.16], [0.06, 0.22, 0.03], gold); // 금빛 라인
+  add('cyl', [0, 0.44, 0], [0.235, 0.07, 0.205], boot); // 가죽 벨트
+  add('box', [0, 0.44, 0.195], [0.1, 0.085, 0.04], gold); // 벨트 금장 버클
+
+  // 3) 흉갑(Breastplate) & 붉은 스카프 & 푸른 망토
+  add('cyl', [0, 0.59, 0], [0.23, 0.28, 0.19], tunic);
+  add('box', [0, 0.6, 0.08], [0.34, 0.26, 0.16], silver); // 은빛 흉갑
+  add('box', [0, 0.6, 0.165], [0.08, 0.22, 0.03], gold); // 흉갑 중앙 금장 문양
+  add('torus', [0, 0.73, 0.02], [0.18, 0.16, 0.18], 0xc84646, 0, Math.PI / 2); // 붉은 머플러
+  // 등 뒤 입체 망토 (3겹 주름)
+  add('box', [0, 0.48, -0.19], [0.46, 0.56, 0.06], darkBlue, 0, 0.12);
+  for (const s of [-1, 1]) add('cone', [s * 0.16, 0.44, -0.21], [0.16, 0.58, 0.08], 0x235c7d, s * -0.1, 0.14);
+
+  // 4) 레이어드 어깨 견갑 + 상완/하완/손목 보호대 + 주먹
+  for (const s of [-1, 1]) {
+    const x = s * 0.31;
+    add('ball', [x, 0.69, 0], [0.13, 0.11, 0.14], silver); // 어깨 갑주
+    add('box', [x, 0.64, 0], [0.15, 0.04, 0.16], gold); // 견갑 금테
+    add('cyl', [x * 1.05, 0.56, 0.02], [0.062, 0.18, 0.062], tunic, s * 0.14); // 상완
+    add('cyl', [x * 1.1, 0.43, 0.07], [0.065, 0.16, 0.065], silver, s * 0.08, -0.25); // 건틀릿
+    add('ball', [x * 1.12, 0.35, 0.12], [0.062, 0.062, 0.062], skin); // 주먹쥔 손
+  }
+
+  // 5) 목 + 입체적인 얼굴(턱선, 귀, 코, 눈흰자/동공/하이라이트, 눈썹)
+  add('cyl', [0, 0.76, 0], [0.09, 0.1, 0.09], skin);
+  add('ball', [0, 0.92, 0], [0.235, 0.25, 0.225], skin); // 두상
+  add('cyl', [0, 0.84, 0.03], [0.19, 0.14, 0.18], skin); // 턱선 보강
+  for (const s of [-1, 1]) {
+    add('ball', [s * 0.23, 0.9, 0], [0.045, 0.065, 0.035], skin); // 양쪽 귀
+    // 정밀한 눈 (흰자 + 짙은 청록 동공 + 흰색 안광 하이라이트 + 눈썹)
+    add('ball', [s * 0.085, 0.91, 0.205], [0.042, 0.052, 0.02], 0xffffff);
+    add('ball', [s * 0.085, 0.91, 0.218], [0.028, 0.038, 0.018], 0x183442);
+    add('ball', [s * 0.072, 0.925, 0.228], [0.011, 0.011, 0.01], 0xffffff);
+    add('box', [s * 0.088, 0.975, 0.21], [0.068, 0.018, 0.02], hair, s * -0.15); // 늠름한 눈썹
+  }
+  add('cone', [0, 0.88, 0.23], [0.022, 0.04, 0.03], 0xe2b68d, 0, Math.PI / 2); // 오뚝한 코
+  add('box', [0, 0.825, 0.215], [0.06, 0.014, 0.015], 0xb87664); // 입
+
+  // 6) 입체적인 레이어드 헤어스타일 (앞머리 가르마 + 구레나룻 + 뒷머리 볼륨)
+  add('ball', [0, 1.0, -0.02], [0.25, 0.21, 0.24], hair);
+  add('box', [0, 0.94, -0.16], [0.42, 0.24, 0.14], hair);
+  // 이마 서클릿(머리띠)
+  add('box', [0, 1.01, 0.215], [0.3, 0.04, 0.03], gold);
+  add('rock', [0, 1.01, 0.23], [0.04, 0.045, 0.02], 0x35e0ff);
+  // 뾰족한 앞머리 & 옆머리 결
+  add('cone', [-0.06, 1.04, 0.2], [0.07, 0.18, 0.06], hair, 2.7, 0.3);
+  add('cone', [0.07, 1.05, 0.19], [0.08, 0.2, 0.06], hair, -2.6, 0.3);
+  for (const s of [-1, 1]) add('cone', [s * 0.21, 0.92, 0.12], [0.055, 0.2, 0.06], hair, Math.PI, 0.15);
+
+  // 7) 정교한 성기사의 검 & 문장 방패
+  add('cyl', [0.36, 0.36, 0.14], [0.035, 0.22, 0.035], 0x5c3a24); // 검 손잡이
+  add('ball', [0.36, 0.24, 0.14], [0.055, 0.055, 0.055], gold); // 폼멜
+  add('box', [0.36, 0.46, 0.14], [0.24, 0.05, 0.09], gold); // 크로스 가드
+  add('rock', [0.36, 0.46, 0.18], [0.045, 0.055, 0.03], 0x3de0ff); // 가드 보석
+  add('box', [0.36, 0.78, 0.14], [0.085, 0.6, 0.035], silver); // 검신
+  add('box', [0.36, 0.76, 0.16], [0.025, 0.48, 0.02], 0x79d7f7); // 검신 에테르 홈
+  add('cone', [0.36, 1.15, 0.14], [0.062, 0.18, 0.03], silver); // 검끝
+  // 왼손 카이트 실드
+  add('box', [-0.38, 0.48, 0.16], [0.28, 0.38, 0.05], gold); // 방패 금테
+  add('box', [-0.38, 0.48, 0.18], [0.23, 0.33, 0.04], 0x265f82); // 방패 청색 면
+  add('box', [-0.38, 0.48, 0.205], [0.05, 0.24, 0.02], gold); // 십자 문양 세로
+  add('box', [-0.38, 0.52, 0.205], [0.16, 0.05, 0.02], gold); // 십자 문양 가로
+
+  return { parts: p, team: 'ally' };
+}
+
+function buildHighDetailRia() {
+  const p = [], add = (...a) => p.push(a);
+  const skin = 0xf7d7b5, lilac = 0xb589d6, deepPurple = 0x6b458c, cream = 0xfaf3e0, gold = 0xf2cf72, hair = 0xebebf5;
+
+  // 1) 구두 & 스타킹 다리
+  for (const s of [-1, 1]) {
+    const x = s * 0.1;
+    add('cyl', [x, 0.14, 0], [0.06, 0.22, 0.06], cream);
+    add('box', [x, 0.04, 0.04], [0.11, 0.07, 0.18], deepPurple);
+    add('box', [x, 0.06, 0.09], [0.06, 0.03, 0.03], gold);
+  }
+
+  // 2) 이중 플리츠 마법사 스커트 & 잘록한 코르셋 상의
+  add('cone', [0, 0.28, 0], [0.35, 0.34, 0.31], cream); // 속치마 프릴
+  add('cone', [0, 0.35, 0], [0.33, 0.42, 0.29], lilac); // 겉치마
+  add('torus', [0, 0.18, 0], [0.31, 0.07, 0.28], gold, 0, Math.PI / 2); // 치마 하단 금줄
+  add('cyl', [0, 0.56, 0], [0.185, 0.26, 0.16], deepPurple); // 허리 상의
+  add('cone', [0, 0.64, 0], [0.27, 0.18, 0.23], lilac, Math.PI); // 숄더 케이프
+  add('ball', [0, 0.59, 0.17], [0.075, 0.085, 0.045], 0xffe885); // 가슴 아르카 브로치
+  for (const s of [-1, 1]) add('cone', [s * 0.1, 0.57, 0.17], [0.045, 0.11, 0.03], cream, s * 1.2); // 리본
+
+  // 3) 퍼프 소매 + 가녀린 팔 + 손
+  for (const s of [-1, 1]) {
+    const x = s * 0.24;
+    add('ball', [x, 0.64, 0], [0.095, 0.095, 0.095], lilac); // 퍼프 숄더
+    add('cone', [x * 1.12, 0.49, 0.04], [0.09, 0.22, 0.09], lilac, s * 0.15); // 소매
+    add('ball', [x * 1.16, 0.38, 0.08], [0.052, 0.052, 0.052], skin); // 손
+  }
+
+  // 4) 목 + 얼굴 + 보랏빛 눈동자 + 은빛 옆머리/뒷머리 타래
+  add('cyl', [0, 0.74, 0], [0.075, 0.09, 0.075], skin);
+  add('ball', [0, 0.9, 0], [0.23, 0.24, 0.22], skin);
+  for (const s of [-1, 1]) {
+    add('ball', [s * 0.22, 0.89, 0], [0.04, 0.055, 0.03], skin);
+    add('ball', [s * 0.082, 0.89, 0.198], [0.042, 0.054, 0.02], 0xffffff);
+    add('ball', [s * 0.082, 0.89, 0.212], [0.03, 0.042, 0.018], 0x6f3aa8); // 자수정색 눈동자
+    add('ball', [s * 0.07, 0.908, 0.222], [0.012, 0.012, 0.01], 0xffffff);
+    add('ball', [s * 0.13, 0.84, 0.195], [0.035, 0.02, 0.01], 0xf2a7b3); // 볼터치
+    add('box', [s * 0.082, 0.96, 0.2], [0.055, 0.014, 0.015], 0xb8b5c9, s * 0.1);
+    // 귀 옆으로 내려오는 은발 옆머리 타래
+    add('cone', [s * 0.2, 0.75, 0.1], [0.055, 0.28, 0.055], hair, Math.PI, -0.1);
+    add('cone', [s * 0.18, 0.65, -0.14], [0.085, 0.45, 0.075], hair, Math.PI);
+  }
+  add('cone', [0, 0.865, 0.22], [0.018, 0.032, 0.025], 0xe8bc96, 0, Math.PI / 2);
+  add('box', [0, 0.815, 0.205], [0.045, 0.013, 0.012], 0xd47b81);
+
+  // 5) 은발 앞머리 + 챙 넓은 마법사 모자 & 리본
+  add('ball', [0, 0.98, -0.02], [0.24, 0.18, 0.23], hair);
+  for (const x of [-0.08, 0, 0.08]) add('cone', [x, 0.98, 0.195], [0.055, 0.14, 0.04], hair, Math.PI);
+  add('cyl', [0, 1.03, -0.01], [0.38, 0.035, 0.36], deepPurple, 0, -0.1); // 넓은 모자 챙
+  add('cone', [0, 1.25, -0.04], [0.25, 0.46, 0.24], lilac, 0, -0.15); // 모자 고깔
+  add('cone', [0, 1.48, -0.12], [0.09, 0.18, 0.09], lilac, 0, -0.45); // 살짝 꺾인 모자 끝
+  add('cyl', [0, 1.07, -0.02], [0.23, 0.055, 0.22], cream, 0, -0.1); // 모자 흰 리본 띠
+  for (const s of [-1, 1]) add('cone', [s * 0.09, 1.08, 0.2], [0.05, 0.12, 0.04], cream, s * 1.35);
+
+  // 6) 날개 달린 아르카 마력 지팡이
+  add('cyl', [0.36, 0.64, 0.06], [0.028, 1.12, 0.028], 0x8c6d46);
+  add('ball', [0.36, 0.09, 0.06], [0.048, 0.048, 0.048], gold);
+  add('torus', [0.36, 1.24, 0.06], [0.13, 0.18, 0.13], gold); // 지팡이 상단 금테 헤드
+  add('rock', [0.36, 1.24, 0.06], [0.095, 0.125, 0.095], 0xe29eff); // 마력 크리스탈 코어
+  for (const s of [-1, 1]) add('cone', [0.36 + s * 0.16, 1.26, 0.06], [0.045, 0.18, 0.04], cream, s * -0.65);
+
+  return { parts: p, team: 'ally' };
+}
+
+// ==========================================
+// 뷰어 생성 및 렌더링 루프
+// ==========================================
+const enemyConfigs = [
+  { title: '투구 A안 · 제국 중갑 보병', desc: '살구색 피부를 완전히 덮는 다크 스틸 버킷 투구 + 붉은 일자형 바이저 안광', build: buildEnemyHelmetA },
+  { title: '투구 B안 · 강철 척후병', desc: 'T자형 암흑 숨구멍과 두 개의 붉은 안광 + 정수리 강철 볏으로 위압감 강조', build: buildEnemyHelmetB },
+  { title: '투구 C안 · 사막 암살 궁수', desc: '브란과 헷갈리던 맨얼굴 대신 검은 철가면 + 붉은 저격 렌즈 + 잿빛 후드 착용', build: buildEnemyHelmetC }
+];
+
+const heroConfigs = [
+  { title: '고정밀 카일 (High-Detail)', desc: '눈동자·눈썹·귀·앞머리 가르마·레이어드 견갑·벨트·무릎 보호대·망토·성기사 검/방패 조형', build: buildHighDetailKyle },
+  { title: '고정밀 리아 (High-Detail)', desc: '자수정 눈동자·볼터치·은발 옆머리 타래·챙 넓은 마녀 모자·프릴 스커트·날개 지팡이 조형', build: buildHighDetailRia }
+];
+
+const viewers = [];
+
+function createCard(container, cfg, isHero) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="canvas-wrap"><canvas></canvas><span class="poly-badge"></span></div>
+    <span class="tag ${isHero ? 'hero' : 'enemy'}">${isHero ? '아군 영웅 (1 Draw Call)' : '적군 몬스터 (피부 노출 0%)'}</span>
+    <h3>${cfg.title}</h3>
+    <p>${cfg.desc}</p>
+  `;
+  container.appendChild(card);
+
+  const canvas = card.querySelector('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
+  camera.position.set(0, 1.25, 3.55);
+  camera.lookAt(0, 0.65, 0);
+
+  scene.add(new THREE.HemisphereLight(0xeef7e1, 0x223842, 2.5));
+  const dirLight = new THREE.DirectionalLight(0xfff0cf, 3.0);
+  dirLight.position.set(-3, 6, 5);
+  scene.add(dirLight);
+
+  const data = cfg.build();
+  const bakedGeo = bake(data.parts);
+  const tris = bakedGeo.attributes.position.count / 3;
+  card.querySelector('.poly-badge').textContent = `${data.parts.length} 파츠 · ${tris} 삼각형`;
+
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(bakedGeo, sharedMat);
+  group.add(body);
+
+  // 아군/적군 바닥 링 구분
+  const ringGeo = data.team === 'ally'
+    ? new THREE.RingGeometry(0.35, 0.42, 32)
+    : new THREE.RingGeometry(0.35, 0.42, 6); // 적군은 날카로운 6각형 링
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: data.team === 'ally' ? 0x3ef2d6 : 0xd9383a,
+    side: THREE.DoubleSide
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.02;
+  group.add(ring);
+
+  scene.add(group);
+
+  let dragging = false, prevX = 0, rotY = 0.35;
+  canvas.addEventListener('pointerdown', e => { dragging = true; prevX = e.clientX; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => { if (!dragging) return; rotY += (e.clientX - prevX) * 0.015; prevX = e.clientX; });
+  canvas.addEventListener('pointerup', () => dragging = false);
+
+  viewers.push({ canvas, renderer, scene, camera, group, body, getRot: () => rotY, addRot: d => { if (!dragging) rotY += d; } });
+}
+
+enemyConfigs.forEach(c => createCard(document.getElementById('enemyGrid'), c, false));
+heroConfigs.forEach(c => createCard(document.getElementById('heroGrid'), c, true));
+
+function animate(ms) {
+  requestAnimationFrame(animate);
+  for (const v of viewers) {
+    const w = v.canvas.clientWidth, h = v.canvas.clientHeight;
+    if (v.canvas.width !== w * 2 || v.canvas.height !== h * 2) {
+      v.renderer.setSize(w, h, false);
+      v.camera.aspect = w / h;
+      v.camera.updateProjectionMatrix();
     }
-
-    function closeExportModal() {
-      document.getElementById('export-modal').classList.add('hidden');
-    }
-
-    function copyGeneratedCode() {
-      const code = document.getElementById('code-snippet-pre').textContent;
-      const textArea = document.createElement("textarea");
-      textArea.value = code;
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        const btnText = document.getElementById('copy-btn-text');
-        btnText.textContent = "✓ 복사 완료!";
-        showToast("선택된 12곡 코드와 명세가 클립보드에 복사되었습니다!");
-        setTimeout(() => { btnText.textContent = "코드 및 명세 클립보드 복사"; }, 2200);
-      } catch (err) {
-        showToast("클립보드 복사에 실패했습니다.");
-      }
-      document.body.removeChild(textArea);
-    }
-
-    /* Self index.html Download Utility */
-    function downloadSelfHtml() {
-      // Clones document and ensures modal is hidden
-      const clone = document.documentElement.cloneNode(true);
-      const modal = clone.querySelector('#export-modal');
-      if (modal) modal.classList.add('hidden');
-
-      const htmlContent = "<!DOCTYPE html>\n" + clone.outerHTML;
-      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'index.html';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 1000);
-      showToast("index.html 파일 다운로드가 시작되었습니다!");
-    }
-
-    /* Visualizer Canvas */
-    function initVisualizer() {
-      const canvas = document.getElementById('visualizer-canvas');
-      const ctx = canvas.getContext('2d');
-
-      function resize() {
-        canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
-        canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
-      }
-      resize();
-      window.addEventListener('resize', resize);
-
-      const bufferLen = analyserNode.frequencyBinCount;
-      const timeData = new Uint8Array(bufferLen);
-      const freqData = new Uint8Array(bufferLen);
-
-      function renderFrame() {
-        requestAnimationFrame(renderFrame);
-        ctx.fillStyle = 'rgba(7, 11, 20, 0.32)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (!isPlaying) return;
-
-        analyserNode.getByteTimeDomainData(timeData);
-        analyserNode.getByteFrequencyData(freqData);
-
-        const barWidth = (canvas.width / bufferLen) * 2.2;
-        let barX = 0;
-        for (let i = 0; i < bufferLen; i++) {
-          const barHeight = (freqData[i] / 255) * canvas.height * 0.75;
-          ctx.fillStyle = `rgba(245, 158, 11, ${0.08 + (freqData[i] / 255) * 0.42})`;
-          ctx.fillRect(barX, canvas.height - barHeight, barWidth, barHeight);
-          barX += barWidth + 1;
-        }
-
-        ctx.lineWidth = 2.5 * window.devicePixelRatio;
-        ctx.strokeStyle = currentPlayingVer === 'B' ? '#818cf8' : (currentPlayingVer === 'C' ? '#34d399' : '#f59e0b');
-        ctx.beginPath();
-
-        const sliceWidth = canvas.width / bufferLen;
-        let x = 0;
-        for (let i = 0; i < bufferLen; i++) {
-          const v = timeData[i] / 128.0;
-          const y = (v * canvas.height) / 2;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-          x += sliceWidth;
-        }
-        ctx.lineTo(canvas.width, canvas.height / 2);
-        ctx.stroke();
-      }
-      renderFrame();
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      const text = document.getElementById('toast-msg');
-      text.textContent = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      renderTrackCards();
-    });
-  </script>
+    v.addRot(0.006);
+    v.group.rotation.y = v.getRot();
+    v.body.position.y = Math.sin(ms * 0.0035) * 0.025;
+    v.renderer.render(v.scene, v.camera);
+  }
+}
+requestAnimationFrame(animate);
+</script>
 </body>
 </html>
