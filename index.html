@@ -7,31 +7,58 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1c2b2d;color:#eef3e8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
-h1{font-size:18px;margin-bottom:6px;color:#a8e6cf}
+.top-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+h1{font-size:18px;color:#a8e6cf}
+.dl-btn{background:#ffd97d;color:#1c2b2d;border:0;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer}
 p.desc{font-size:13px;color:#b8c9c2;margin-bottom:16px;line-height:1.5}
 .section-title{font-size:15px;font-weight:800;color:#ffd97d;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #355256}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
 .card{background:#eff3e8;color:#233d36;border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35)}
-.canvas-wrap{width:100%;height:240px;background:radial-gradient(ellipse at 50% 35%,#b5d4c2,#d8e4d4 72%);border-radius:10px;position:relative;overflow:hidden}
+.canvas-wrap{width:100%;height:240px;background:radial-gradient(ellipse at 50% 35%,#b5d4c2,#d8e4d4 72%);border-radius:10px;position:relative;overflow:hidden;touch-action:pan-y}
 canvas{width:100%;height:100%;display:block;cursor:grab}
 .tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-top:8px}
 .tag.enemy{background:#522b2b;color:#ff9e9e}
 .tag.hero{background:#1f5c52;color:#b5f5ec}
 .card h3{font-size:16px;margin:6px 0 4px}
 .card p{font-size:12px;color:#4a635b;line-height:1.45}
-.poly-badge{position:absolute;top:8px;right:8px;background:rgba(20,42,44,0.75);color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;font-weight:700}
+.poly-badge{position:absolute;top:8px;right:8px;background:rgba(20,42,44,0.75);color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;font-weight:700;pointer-events:none}
+#errBox{display:none;background:#7a2020;color:#fff;padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px}
 </style>
 </head>
 <body>
 
+<div class="top-bar">
 <h1>cnation TACTICS · 3D 모델 업그레이드 프리뷰</h1>
-<p class="desc">마우스나 손가락으로 각 모델을 좌우로 드래그해 회전시켜 보세요. 모든 모델은 외부 이미지 없이 순수 Three.js 도형 병합(1 Draw Call)으로 렌더링됩니다.</p>
+<button class="dl-btn" id="downloadBtn">💾 index.html 파일로 바로 저장</button>
+</div>
+<p class="desc">손가락이나 마우스로 각 캐릭터를 좌우로 드래그해 회전시켜 보세요. 모든 모델은 외부 이미지 없이 순수 Three.js 도형 병합(1 Draw Call)으로 렌더링됩니다.</p>
+<div id="errBox"></div>
 
 <div class="section-title">1. 인간형 적군 투구 디자인 3종 (피부 노출 제거 · 칙칙한 철제 톤 · 붉은 안광)</div>
 <div class="grid" id="enemyGrid"></div>
 
 <div class="section-title">2. 주인공 고정밀(High-Detail) 3D 모델링 비교 (카일 & 리아)</div>
 <div class="grid" id="heroGrid"></div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    for (const reg of regs) reg.unregister();
+  });
+}
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'index.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+});
+</script>
 
 <script type="importmap">
 {
@@ -44,6 +71,12 @@ canvas{width:100%;height:100%;display:block;cursor:grab}
 <script type="module">
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+window.addEventListener('error', e => {
+  const box = document.getElementById('errBox');
+  box.style.display = 'block';
+  box.textContent = '오류: ' + e.message;
+});
 
 const geo = {
   box: new THREE.BoxGeometry(1, 1, 1),
@@ -60,11 +93,11 @@ function bake(parts) {
   const arr = parts.map(p => {
     const [type, pos, scale, col, rot = 0, rotX = 0, rotY = 0] = p;
     let g = geo[type].index ? geo[type].toNonIndexed() : geo[type].clone();
-    g.scale(...scale);
+    g.scale(scale[0], scale[1], scale[2]);
     if (rotX) g.rotateX(rotX);
     if (rotY) g.rotateY(rotY);
     if (rot) g.rotateZ(rot);
-    g.translate(...pos);
+    g.translate(pos[0], pos[1], pos[2]);
     const color = new THREE.Color(col);
     const a = new Float32Array(g.attributes.position.count * 3);
     for (let i = 0; i < a.length; i += 3) {
@@ -78,39 +111,27 @@ function bake(parts) {
   return m;
 }
 
-// ==========================================
-// 1. 적군 투구 모델 3종 (맨얼굴 제거 + 다크 헬름)
-// ==========================================
 function buildEnemyHelmetA() {
-  // 제국 중갑 보병: 풀페이스 슬릿 바이저 + 붉은 안광 + 가시 견갑
   const p = [], add = (...a) => p.push(a);
   const armor = 0x3e434c, darkIron = 0x262930, rustRed = 0x6e3535, glowRed = 0xff2e2e;
-  // 다리 & 부츠
   for (const x of [-0.13, 0.13]) {
     add('cyl', [x, 0.16, 0], [0.085, 0.28, 0.095], darkIron);
     add('box', [x, 0.05, 0.05], [0.15, 0.1, 0.23], 0x1d1f24);
   }
-  // 몸통 & 어두운 스커트 갑주
   add('cone', [0, 0.36, -0.02], [0.34, 0.52, 0.27], rustRed);
   add('box', [0, 0.54, 0], [0.42, 0.44, 0.3], armor);
   add('box', [0, 0.55, 0.16], [0.32, 0.36, 0.06], darkIron);
-  // 칙칙한 가시 견갑 & 팔
   for (const x of [-0.3, 0.3]) {
     add('box', [x, 0.67, 0], [0.22, 0.18, 0.32], darkIron);
     add('cone', [x * 1.15, 0.82, 0], [0.06, 0.18, 0.06], 0x575c66, x < 0 ? 0.35 : -0.35);
     add('cyl', [x, 0.46, 0.02], [0.07, 0.34, 0.07], armor, x > 0 ? 0.15 : -0.15);
   }
-  // 풀페이스 철제 버킷 투구 (피부 노출 0%)
   add('cyl', [0, 0.91, 0], [0.25, 0.34, 0.25], armor);
   add('ball', [0, 1.06, 0], [0.25, 0.14, 0.25], darkIron);
-  add('box', [0, 0.88, 0.15], [0.34, 0.26, 0.18], darkIron); // 안면 마스크
-  // 붉은 일자형 바이저 안광
+  add('box', [0, 0.88, 0.15], [0.34, 0.26, 0.18], darkIron);
   add('box', [0, 0.93, 0.245], [0.26, 0.045, 0.02], glowRed);
-  // 숨구멍 슬릿
   for (const y of [0.83, 0.78]) add('box', [0, y, 0.245], [0.18, 0.018, 0.02], 0x111317);
-  // 투구 뿔 장식
   for (const x of [-0.22, 0.22]) add('cone', [x, 1.14, 0.02], [0.06, 0.24, 0.06], rustRed, x < 0 ? 0.45 : -0.45);
-  // 흑철 방패 & 창
   add('box', [-0.42, 0.48, 0.16], [0.36, 0.56, 0.08], darkIron);
   add('box', [-0.42, 0.48, 0.21], [0.26, 0.44, 0.03], rustRed);
   add('cyl', [0.39, 0.68, 0.1], [0.045, 1.05, 0.045], 0x4a3c31);
@@ -119,7 +140,6 @@ function buildEnemyHelmetA() {
 }
 
 function buildEnemyHelmetB() {
-  // 강철 척후병: T자형 다크 바이저 + 정수리 볏 + 두 개의 붉은 안광
   const p = [], add = (...a) => p.push(a);
   const slate = 0x45525c, charcoal = 0x283036, bronze = 0x6e6250, glowRed = 0xff3b30;
   for (const x of [-0.12, 0.12]) {
@@ -132,17 +152,13 @@ function buildEnemyHelmetB() {
     add('rock', [x, 0.72, 0], [0.18, 0.15, 0.2], charcoal);
     add('cyl', [x, 0.47, 0.04], [0.068, 0.34, 0.068], slate);
   }
-  // 바뷰트(T자형) 투구
   add('ball', [0, 0.93, 0], [0.26, 0.28, 0.26], slate);
   add('box', [0, 0.87, 0.14], [0.35, 0.27, 0.2], charcoal);
-  // T자형 검은 슬릿 + 붉은 두 눈
   add('box', [0, 0.92, 0.245], [0.26, 0.055, 0.02], 0x0e1114);
   add('box', [0, 0.83, 0.245], [0.055, 0.18, 0.02], 0x0e1114);
   for (const x of [-0.08, 0.08]) add('ball', [x, 0.92, 0.25], [0.032, 0.024, 0.02], glowRed);
-  // 투구 정수리 강철 볏
   add('box', [0, 1.16, -0.02], [0.06, 0.22, 0.34], bronze);
   add('cone', [0, 1.31, 0.04], [0.07, 0.22, 0.12], charcoal);
-  // 흑철 대검
   add('box', [0.38, 0.62, 0.12], [0.1, 0.82, 0.05], 0x6f7a80);
   add('cone', [0.38, 1.09, 0.12], [0.09, 0.22, 0.05], 0x6f7a80);
   add('box', [0.38, 0.24, 0.12], [0.26, 0.06, 0.1], bronze);
@@ -150,186 +166,155 @@ function buildEnemyHelmetB() {
 }
 
 function buildEnemyHelmetC() {
-  // 사막 궁수 (브란과 헷갈리지 않는 암흑 복면 + 외눈 붉은 고글 + 칙칙한 망토)
   const p = [], add = (...a) => p.push(a);
-  consthood = 0x4a3f37, mask = 0x24201e, cloth = 0x695846, glowRed = 0xff453a;
+  const hood = 0x4a3f37, mask = 0x24201e, cloth = 0x695846, glowRed = 0xff453a;
   for (const x of [-0.11, 0.11]) {
     add('cyl', [x, 0.15, 0], [0.075, 0.26, 0.08], mask);
     add('box', [x, 0.04, 0.05], [0.13, 0.08, 0.2], mask);
   }
   add('cone', [0, 0.42, -0.03], [0.34, 0.62, 0.28], cloth);
   add('box', [0, 0.54, 0.12], [0.34, 0.38, 0.12], 0x3b322c);
-  // X자 가슴 가죽끈
   add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, 0.65);
   add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, -0.65);
-  // 검은 철제 안면 마스크 + 뾰족한 잿빛 두건 (살구색 피부 완전히 제거)
   add('ball', [0, 0.88, 0], [0.24, 0.25, 0.24], mask);
   add('cone', [0, 1.12, -0.04], [0.34, 0.46, 0.32], hood);
-  add('box', [0, 0.99, 0.16], [0.38, 0.08, 0.18], hood); // 깊게 눌러쓴 후드 챙
-  // 붉은 저격수 외눈 렌즈 + 작은 보조 렌즈
+  add('box', [0, 0.99, 0.16], [0.38, 0.08, 0.18], hood);
   add('cyl', [-0.07, 0.89, 0.23], [0.055, 0.04, 0.055], glowRed, 0, Math.PI / 2);
   add('ball', [0.09, 0.89, 0.23], [0.025, 0.025, 0.02], glowRed);
-  // 석궁
   for (const x of [-0.28, 0.28]) add('cyl', [x, 0.49, 0.05], [0.065, 0.32, 0.065], hood);
   add('box', [0.4, 0.5, 0.15], [0.46, 0.07, 0.1], 0x3d312a);
   add('box', [0.54, 0.5, 0.18], [0.07, 0.34, 0.07], 0x736354);
   return { parts: p, team: 'enemy' };
 }
 
-// ==========================================
-// 2. 주인공 고정밀(High-Detail) 모델 2종
-// ==========================================
 function buildHighDetailKyle() {
   const p = [], add = (...a) => p.push(a);
   const skin = 0xf4cfa8, tunic = 0x2d7fa3, darkBlue = 0x1b4965, silver = 0xdce6ea, gold = 0xe8c166, hair = 0x7a4928, boot = 0x4a372b;
-
-  // 1) 다리, 무릎 보호대, 부츠 밑창
   for (const s of [-1, 1]) {
     const x = s * 0.125;
-    add('cyl', [x, 0.24, 0], [0.078, 0.22, 0.082], 0x324a5e); // 허벅지 바지
-    add('cyl', [x, 0.12, 0.01], [0.082, 0.18, 0.09], boot); // 가죽 부츠
-    add('box', [x, 0.035, 0.05], [0.135, 0.07, 0.21], 0x2b211b); // 부츠 발코
-    add('box', [x, 0.18, 0.085], [0.1, 0.06, 0.04], gold); // 부츠 금장 버클
-    add('ball', [x, 0.23, 0.08], [0.065, 0.065, 0.04], silver); // 은빛 무릎 보호대
+    add('cyl', [x, 0.24, 0], [0.078, 0.22, 0.082], 0x324a5e);
+    add('cyl', [x, 0.12, 0.01], [0.082, 0.18, 0.09], boot);
+    add('box', [x, 0.035, 0.05], [0.135, 0.07, 0.21], 0x2b211b);
+    add('box', [x, 0.18, 0.085], [0.1, 0.06, 0.04], gold);
+    add('ball', [x, 0.23, 0.08], [0.065, 0.065, 0.04], silver);
   }
-
-  // 2) 튜닉 코트 자락 & 벨트 + 금장 버클
   add('cone', [0, 0.38, 0], [0.31, 0.36, 0.24], tunic);
-  add('box', [0, 0.34, 0.14], [0.14, 0.26, 0.04], 0xf2efe4); // 전면 흰색 태바드 휘장
-  add('box', [0, 0.34, 0.16], [0.06, 0.22, 0.03], gold); // 금빛 라인
-  add('cyl', [0, 0.44, 0], [0.235, 0.07, 0.205], boot); // 가죽 벨트
-  add('box', [0, 0.44, 0.195], [0.1, 0.085, 0.04], gold); // 벨트 금장 버클
-
-  // 3) 흉갑(Breastplate) & 붉은 스카프 & 푸른 망토
+  add('box', [0, 0.34, 0.14], [0.14, 0.26, 0.04], 0xf2efe4);
+  add('box', [0, 0.34, 0.16], [0.06, 0.22, 0.03], gold);
+  add('cyl', [0, 0.44, 0], [0.235, 0.07, 0.205], boot);
+  add('box', [0, 0.44, 0.195], [0.1, 0.085, 0.04], gold);
   add('cyl', [0, 0.59, 0], [0.23, 0.28, 0.19], tunic);
-  add('box', [0, 0.6, 0.08], [0.34, 0.26, 0.16], silver); // 은빛 흉갑
-  add('box', [0, 0.6, 0.165], [0.08, 0.22, 0.03], gold); // 흉갑 중앙 금장 문양
-  add('torus', [0, 0.73, 0.02], [0.18, 0.16, 0.18], 0xc84646, 0, Math.PI / 2); // 붉은 머플러
-  // 등 뒤 입체 망토 (3겹 주름)
+  add('box', [0, 0.6, 0.08], [0.34, 0.26, 0.16], silver);
+  add('box', [0, 0.6, 0.165], [0.08, 0.22, 0.03], gold);
+  add('torus', [0, 0.73, 0.02], [0.18, 0.16, 0.18], 0xc84646, 0, Math.PI / 2);
   add('box', [0, 0.48, -0.19], [0.46, 0.56, 0.06], darkBlue, 0, 0.12);
   for (const s of [-1, 1]) add('cone', [s * 0.16, 0.44, -0.21], [0.16, 0.58, 0.08], 0x235c7d, s * -0.1, 0.14);
-
-  // 4) 레이어드 어깨 견갑 + 상완/하완/손목 보호대 + 주먹
   for (const s of [-1, 1]) {
     const x = s * 0.31;
-    add('ball', [x, 0.69, 0], [0.13, 0.11, 0.14], silver); // 어깨 갑주
-    add('box', [x, 0.64, 0], [0.15, 0.04, 0.16], gold); // 견갑 금테
-    add('cyl', [x * 1.05, 0.56, 0.02], [0.062, 0.18, 0.062], tunic, s * 0.14); // 상완
-    add('cyl', [x * 1.1, 0.43, 0.07], [0.065, 0.16, 0.065], silver, s * 0.08, -0.25); // 건틀릿
-    add('ball', [x * 1.12, 0.35, 0.12], [0.062, 0.062, 0.062], skin); // 주먹쥔 손
+    add('ball', [x, 0.69, 0], [0.13, 0.11, 0.14], silver);
+    add('box', [x, 0.64, 0], [0.15, 0.04, 0.16], gold);
+    add('cyl', [x * 1.05, 0.56, 0.02], [0.062, 0.18, 0.062], tunic, s * 0.14);
+    add('cyl', [x * 1.1, 0.43, 0.07], [0.065, 0.16, 0.065], silver, s * 0.08, -0.25);
+    add('ball', [x * 1.12, 0.35, 0.12], [0.062, 0.062, 0.062], skin);
   }
-
-  // 5) 목 + 입체적인 얼굴(턱선, 귀, 코, 눈흰자/동공/하이라이트, 눈썹)
   add('cyl', [0, 0.76, 0], [0.09, 0.1, 0.09], skin);
-  add('ball', [0, 0.92, 0], [0.235, 0.25, 0.225], skin); // 두상
-  add('cyl', [0, 0.84, 0.03], [0.19, 0.14, 0.18], skin); // 턱선 보강
+  add('ball', [0, 0.92, 0], [0.235, 0.25, 0.225], skin);
+  add('cyl', [0, 0.84, 0.03], [0.19, 0.14, 0.18], skin);
   for (const s of [-1, 1]) {
-    add('ball', [s * 0.23, 0.9, 0], [0.045, 0.065, 0.035], skin); // 양쪽 귀
-    // 정밀한 눈 (흰자 + 짙은 청록 동공 + 흰색 안광 하이라이트 + 눈썹)
+    add('ball', [s * 0.23, 0.9, 0], [0.045, 0.065, 0.035], skin);
     add('ball', [s * 0.085, 0.91, 0.205], [0.042, 0.052, 0.02], 0xffffff);
     add('ball', [s * 0.085, 0.91, 0.218], [0.028, 0.038, 0.018], 0x183442);
     add('ball', [s * 0.072, 0.925, 0.228], [0.011, 0.011, 0.01], 0xffffff);
-    add('box', [s * 0.088, 0.975, 0.21], [0.068, 0.018, 0.02], hair, s * -0.15); // 늠름한 눈썹
+    add('box', [s * 0.088, 0.975, 0.21], [0.068, 0.018, 0.02], hair, s * -0.15);
   }
-  add('cone', [0, 0.88, 0.23], [0.022, 0.04, 0.03], 0xe2b68d, 0, Math.PI / 2); // 오뚝한 코
-  add('box', [0, 0.825, 0.215], [0.06, 0.014, 0.015], 0xb87664); // 입
-
-  // 6) 입체적인 레이어드 헤어스타일 (앞머리 가르마 + 구레나룻 + 뒷머리 볼륨)
+  add('cone', [0, 0.88, 0.23], [0.022, 0.04, 0.03], 0xe2b68d, 0, Math.PI / 2);
+  add('box', [0, 0.825, 0.215], [0.06, 0.014, 0.015], 0xb87664);
   add('ball', [0, 1.0, -0.02], [0.25, 0.21, 0.24], hair);
   add('box', [0, 0.94, -0.16], [0.42, 0.24, 0.14], hair);
-  // 이마 서클릿(머리띠)
   add('box', [0, 1.01, 0.215], [0.3, 0.04, 0.03], gold);
   add('rock', [0, 1.01, 0.23], [0.04, 0.045, 0.02], 0x35e0ff);
-  // 뾰족한 앞머리 & 옆머리 결
   add('cone', [-0.06, 1.04, 0.2], [0.07, 0.18, 0.06], hair, 2.7, 0.3);
   add('cone', [0.07, 1.05, 0.19], [0.08, 0.2, 0.06], hair, -2.6, 0.3);
   for (const s of [-1, 1]) add('cone', [s * 0.21, 0.92, 0.12], [0.055, 0.2, 0.06], hair, Math.PI, 0.15);
-
-  // 7) 정교한 성기사의 검 & 문장 방패
-  add('cyl', [0.36, 0.36, 0.14], [0.035, 0.22, 0.035], 0x5c3a24); // 검 손잡이
-  add('ball', [0.36, 0.24, 0.14], [0.055, 0.055, 0.055], gold); // 폼멜
-  add('box', [0.36, 0.46, 0.14], [0.24, 0.05, 0.09], gold); // 크로스 가드
-  add('rock', [0.36, 0.46, 0.18], [0.045, 0.055, 0.03], 0x3de0ff); // 가드 보석
-  add('box', [0.36, 0.78, 0.14], [0.085, 0.6, 0.035], silver); // 검신
-  add('box', [0.36, 0.76, 0.16], [0.025, 0.48, 0.02], 0x79d7f7); // 검신 에테르 홈
-  add('cone', [0.36, 1.15, 0.14], [0.062, 0.18, 0.03], silver); // 검끝
-  // 왼손 카이트 실드
-  add('box', [-0.38, 0.48, 0.16], [0.28, 0.38, 0.05], gold); // 방패 금테
-  add('box', [-0.38, 0.48, 0.18], [0.23, 0.33, 0.04], 0x265f82); // 방패 청색 면
-  add('box', [-0.38, 0.48, 0.205], [0.05, 0.24, 0.02], gold); // 십자 문양 세로
-  add('box', [-0.38, 0.52, 0.205], [0.16, 0.05, 0.02], gold); // 십자 문양 가로
-
+  add('cyl', [0.36, 0.36, 0.14], [0.035, 0.22, 0.035], 0x5c3a24);
+  add('ball', [0.36, 0.24, 0.14], [0.055, 0.055, 0.055], gold);
+  add('box', [0.36, 0.46, 0.14], [0.24, 0.05, 0.09], gold);
+  add('rock', [0.36, 0.46, 0.18], [0.045, 0.055, 0.03], 0x3de0ff);
+  add('box', [0.36, 0.78, 0.14], [0.085, 0.6, 0.035], silver);
+  add('box', [0.36, 0.76, 0.16], [0.025, 0.48, 0.02], 0x79d7f7);
+  add('cone', [0.36, 1.15, 0.14], [0.062, 0.18, 0.03], silver);
+  add('box', [-0.38, 0.48, 0.16], [0.28, 0.38, 0.05], gold);
+  add('box', [-0.38, 0.48, 0.18], [0.23, 0.33, 0.04], 0x265f82);
+  add('box', [-0.38, 0.48, 0.205], [0.05, 0.24, 0.02], gold);
+  add('box', [-0.38, 0.52, 0.205], [0.16, 0.05, 0.02], gold);
   return { parts: p, team: 'ally' };
 }
 
 function buildHighDetailRia() {
   const p = [], add = (...a) => p.push(a);
   const skin = 0xf7d7b5, lilac = 0xb589d6, deepPurple = 0x6b458c, cream = 0xfaf3e0, gold = 0xf2cf72, hair = 0xebebf5;
-
-  // 1) 구두 & 스타킹 다리
   for (const s of [-1, 1]) {
     const x = s * 0.1;
     add('cyl', [x, 0.14, 0], [0.06, 0.22, 0.06], cream);
     add('box', [x, 0.04, 0.04], [0.11, 0.07, 0.18], deepPurple);
     add('box', [x, 0.06, 0.09], [0.06, 0.03, 0.03], gold);
   }
-
-  // 2) 이중 플리츠 마법사 스커트 & 잘록한 코르셋 상의
-  add('cone', [0, 0.28, 0], [0.35, 0.34, 0.31], cream); // 속치마 프릴
-  add('cone', [0, 0.35, 0], [0.33, 0.42, 0.29], lilac); // 겉치마
-  add('torus', [0, 0.18, 0], [0.31, 0.07, 0.28], gold, 0, Math.PI / 2); // 치마 하단 금줄
-  add('cyl', [0, 0.56, 0], [0.185, 0.26, 0.16], deepPurple); // 허리 상의
-  add('cone', [0, 0.64, 0], [0.27, 0.18, 0.23], lilac, Math.PI); // 숄더 케이프
-  add('ball', [0, 0.59, 0.17], [0.075, 0.085, 0.045], 0xffe885); // 가슴 아르카 브로치
-  for (const s of [-1, 1]) add('cone', [s * 0.1, 0.57, 0.17], [0.045, 0.11, 0.03], cream, s * 1.2); // 리본
-
-  // 3) 퍼프 소매 + 가녀린 팔 + 손
+  add('cone', [0, 0.28, 0], [0.35, 0.34, 0.31], cream);
+  add('cone', [0, 0.35, 0], [0.33, 0.42, 0.29], lilac);
+  add('torus', [0, 0.18, 0], [0.31, 0.07, 0.28], gold, 0, Math.PI / 2);
+  add('cyl', [0, 0.56, 0], [0.185, 0.26, 0.16], deepPurple);
+  add('cone', [0, 0.64, 0], [0.27, 0.18, 0.23], lilac, Math.PI);
+  add('ball', [0, 0.59, 0.17], [0.075, 0.085, 0.045], 0xffe885);
+  for (const s of [-1, 1]) add('cone', [s * 0.1, 0.57, 0.17], [0.045, 0.11, 0.03], cream, s * 1.2);
   for (const s of [-1, 1]) {
     const x = s * 0.24;
-    add('ball', [x, 0.64, 0], [0.095, 0.095, 0.095], lilac); // 퍼프 숄더
-    add('cone', [x * 1.12, 0.49, 0.04], [0.09, 0.22, 0.09], lilac, s * 0.15); // 소매
-    add('ball', [x * 1.16, 0.38, 0.08], [0.052, 0.052, 0.052], skin); // 손
+    add('ball', [x, 0.64, 0], [0.095, 0.095, 0.095], lilac);
+    add('cone', [x * 1.12, 0.49, 0.04], [0.09, 0.22, 0.09], lilac, s * 0.15);
+    add('ball', [x * 1.16, 0.38, 0.08], [0.052, 0.052, 0.052], skin);
   }
-
-  // 4) 목 + 얼굴 + 보랏빛 눈동자 + 은빛 옆머리/뒷머리 타래
   add('cyl', [0, 0.74, 0], [0.075, 0.09, 0.075], skin);
   add('ball', [0, 0.9, 0], [0.23, 0.24, 0.22], skin);
   for (const s of [-1, 1]) {
     add('ball', [s * 0.22, 0.89, 0], [0.04, 0.055, 0.03], skin);
     add('ball', [s * 0.082, 0.89, 0.198], [0.042, 0.054, 0.02], 0xffffff);
-    add('ball', [s * 0.082, 0.89, 0.212], [0.03, 0.042, 0.018], 0x6f3aa8); // 자수정색 눈동자
+    add('ball', [s * 0.082, 0.89, 0.212], [0.03, 0.042, 0.018], 0x6f3aa8);
     add('ball', [s * 0.07, 0.908, 0.222], [0.012, 0.012, 0.01], 0xffffff);
-    add('ball', [s * 0.13, 0.84, 0.195], [0.035, 0.02, 0.01], 0xf2a7b3); // 볼터치
+    add('ball', [s * 0.13, 0.84, 0.195], [0.035, 0.02, 0.01], 0xf2a7b3);
     add('box', [s * 0.082, 0.96, 0.2], [0.055, 0.014, 0.015], 0xb8b5c9, s * 0.1);
-    // 귀 옆으로 내려오는 은발 옆머리 타래
     add('cone', [s * 0.2, 0.75, 0.1], [0.055, 0.28, 0.055], hair, Math.PI, -0.1);
     add('cone', [s * 0.18, 0.65, -0.14], [0.085, 0.45, 0.075], hair, Math.PI);
   }
   add('cone', [0, 0.865, 0.22], [0.018, 0.032, 0.025], 0xe8bc96, 0, Math.PI / 2);
   add('box', [0, 0.815, 0.205], [0.045, 0.013, 0.012], 0xd47b81);
-
-  // 5) 은발 앞머리 + 챙 넓은 마법사 모자 & 리본
   add('ball', [0, 0.98, -0.02], [0.24, 0.18, 0.23], hair);
   for (const x of [-0.08, 0, 0.08]) add('cone', [x, 0.98, 0.195], [0.055, 0.14, 0.04], hair, Math.PI);
-  add('cyl', [0, 1.03, -0.01], [0.38, 0.035, 0.36], deepPurple, 0, -0.1); // 넓은 모자 챙
-  add('cone', [0, 1.25, -0.04], [0.25, 0.46, 0.24], lilac, 0, -0.15); // 모자 고깔
-  add('cone', [0, 1.48, -0.12], [0.09, 0.18, 0.09], lilac, 0, -0.45); // 살짝 꺾인 모자 끝
-  add('cyl', [0, 1.07, -0.02], [0.23, 0.055, 0.22], cream, 0, -0.1); // 모자 흰 리본 띠
+  add('cyl', [0, 1.03, -0.01], [0.38, 0.035, 0.36], deepPurple, 0, -0.1);
+  add('cone', [0, 1.25, -0.04], [0.25, 0.46, 0.24], lilac, 0, -0.15);
+  add('cone', [0, 1.48, -0.12], [0.09, 0.18, 0.09], lilac, 0, -0.45);
+  add('cyl', [0, 1.07, -0.02], [0.23, 0.055, 0.22], cream, 0, -0.1);
   for (const s of [-1, 1]) add('cone', [s * 0.09, 1.08, 0.2], [0.05, 0.12, 0.04], cream, s * 1.35);
-
-  // 6) 날개 달린 아르카 마력 지팡이
   add('cyl', [0.36, 0.64, 0.06], [0.028, 1.12, 0.028], 0x8c6d46);
   add('ball', [0.36, 0.09, 0.06], [0.048, 0.048, 0.048], gold);
-  add('torus', [0.36, 1.24, 0.06], [0.13, 0.18, 0.13], gold); // 지팡이 상단 금테 헤드
-  add('rock', [0.36, 1.24, 0.06], [0.095, 0.125, 0.095], 0xe29eff); // 마력 크리스탈 코어
+  add('torus', [0.36, 1.24, 0.06], [0.13, 0.18, 0.13], gold);
+  add('rock', [0.36, 1.24, 0.06], [0.095, 0.125, 0.095], 0xe29eff);
   for (const s of [-1, 1]) add('cone', [0.36 + s * 0.16, 1.26, 0.06], [0.045, 0.18, 0.04], cream, s * -0.65);
-
   return { parts: p, team: 'ally' };
 }
 
-// ==========================================
-// 뷰어 생성 및 렌더링 루프
-// ==========================================
+const sharedRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+sharedRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+sharedRenderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const sharedScene = new THREE.Scene();
+sharedScene.add(new THREE.HemisphereLight(0xeef7e1, 0x223842, 2.5));
+const dirLight = new THREE.DirectionalLight(0xfff0cf, 3.0);
+dirLight.position.set(-3, 6, 5);
+sharedScene.add(dirLight);
+
+const sharedCamera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
+sharedCamera.position.set(0, 1.25, 3.55);
+sharedCamera.lookAt(0, 0.68, 0);
+
 const enemyConfigs = [
   { title: '투구 A안 · 제국 중갑 보병', desc: '살구색 피부를 완전히 덮는 다크 스틸 버킷 투구 + 붉은 일자형 바이저 안광', build: buildEnemyHelmetA },
   { title: '투구 B안 · 강철 척후병', desc: 'T자형 암흑 숨구멍과 두 개의 붉은 안광 + 정수리 강철 볏으로 위압감 강조', build: buildEnemyHelmetB },
@@ -355,33 +340,19 @@ function createCard(container, cfg, isHero) {
   container.appendChild(card);
 
   const canvas = card.querySelector('canvas');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
-  camera.position.set(0, 1.25, 3.55);
-  camera.lookAt(0, 0.65, 0);
-
-  scene.add(new THREE.HemisphereLight(0xeef7e1, 0x223842, 2.5));
-  const dirLight = new THREE.DirectionalLight(0xfff0cf, 3.0);
-  dirLight.position.set(-3, 6, 5);
-  scene.add(dirLight);
-
+  const ctx2d = canvas.getContext('2d');
   const data = cfg.build();
   const bakedGeo = bake(data.parts);
-  const tris = bakedGeo.attributes.position.count / 3;
+  const tris = Math.round(bakedGeo.attributes.position.count / 3);
   card.querySelector('.poly-badge').textContent = `${data.parts.length} 파츠 · ${tris} 삼각형`;
 
   const group = new THREE.Group();
   const body = new THREE.Mesh(bakedGeo, sharedMat);
   group.add(body);
 
-  // 아군/적군 바닥 링 구분
   const ringGeo = data.team === 'ally'
     ? new THREE.RingGeometry(0.35, 0.42, 32)
-    : new THREE.RingGeometry(0.35, 0.42, 6); // 적군은 날카로운 6각형 링
+    : new THREE.RingGeometry(0.35, 0.42, 6);
   const ringMat = new THREE.MeshBasicMaterial({
     color: data.team === 'ally' ? 0x3ef2d6 : 0xd9383a,
     side: THREE.DoubleSide
@@ -391,14 +362,13 @@ function createCard(container, cfg, isHero) {
   ring.position.y = 0.02;
   group.add(ring);
 
-  scene.add(group);
-
   let dragging = false, prevX = 0, rotY = 0.35;
   canvas.addEventListener('pointerdown', e => { dragging = true; prevX = e.clientX; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', e => { if (!dragging) return; rotY += (e.clientX - prevX) * 0.015; prevX = e.clientX; });
   canvas.addEventListener('pointerup', () => dragging = false);
+  canvas.addEventListener('pointercancel', () => dragging = false);
 
-  viewers.push({ canvas, renderer, scene, camera, group, body, getRot: () => rotY, addRot: d => { if (!dragging) rotY += d; } });
+  viewers.push({ canvas, ctx2d, group, body, getRot: () => rotY, addRot: d => { if (!dragging) rotY += d; } });
 }
 
 enemyConfigs.forEach(c => createCard(document.getElementById('enemyGrid'), c, false));
@@ -406,17 +376,31 @@ heroConfigs.forEach(c => createCard(document.getElementById('heroGrid'), c, true
 
 function animate(ms) {
   requestAnimationFrame(animate);
+  const dpr = sharedRenderer.getPixelRatio();
   for (const v of viewers) {
-    const w = v.canvas.clientWidth, h = v.canvas.clientHeight;
-    if (v.canvas.width !== w * 2 || v.canvas.height !== h * 2) {
-      v.renderer.setSize(w, h, false);
-      v.camera.aspect = w / h;
-      v.camera.updateProjectionMatrix();
-    }
-    v.addRot(0.006);
+    const rect = v.canvas.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > window.innerHeight || !rect.width || !rect.height) continue;
+
+    const w = Math.round(rect.width), h = Math.round(rect.height);
+    sharedRenderer.setSize(w, h, false);
+    sharedCamera.aspect = w / h;
+    sharedCamera.updateProjectionMatrix();
+
+    v.addRot(0.008);
     v.group.rotation.y = v.getRot();
     v.body.position.y = Math.sin(ms * 0.0035) * 0.025;
-    v.renderer.render(v.scene, v.camera);
+
+    sharedScene.add(v.group);
+    sharedRenderer.render(sharedScene, sharedCamera);
+    sharedScene.remove(v.group);
+
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (v.canvas.width !== pw || v.canvas.height !== ph) {
+      v.canvas.width = pw;
+      v.canvas.height = ph;
+    }
+    v.ctx2d.clearRect(0, 0, pw, ph);
+    v.ctx2d.drawImage(sharedRenderer.domElement, 0, 0, pw, ph);
   }
 }
 requestAnimationFrame(animate);
