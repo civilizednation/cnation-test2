@@ -1,409 +1,85 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>cnation TACTICS - 3D 캐릭터 & 몬스터 투구 비교 뷰어</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#1c2b2d;color:#eef3e8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
-.top-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-h1{font-size:18px;color:#a8e6cf}
-.dl-btn{background:#ffd97d;color:#1c2b2d;border:0;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer}
-p.desc{font-size:13px;color:#b8c9c2;margin-bottom:16px;line-height:1.5}
-.section-title{font-size:15px;font-weight:800;color:#ffd97d;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #355256}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.card{background:#eff3e8;color:#233d36;border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35)}
-.canvas-wrap{width:100%;height:240px;background:radial-gradient(ellipse at 50% 35%,#b5d4c2,#d8e4d4 72%);border-radius:10px;position:relative;overflow:hidden;touch-action:pan-y}
-canvas{width:100%;height:100%;display:block;cursor:grab}
-.tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-top:8px}
-.tag.enemy{background:#522b2b;color:#ff9e9e}
-.tag.hero{background:#1f5c52;color:#b5f5ec}
-.card h3{font-size:16px;margin:6px 0 4px}
-.card p{font-size:12px;color:#4a635b;line-height:1.45}
-.poly-badge{position:absolute;top:8px;right:8px;background:rgba(20,42,44,0.75);color:#fff;font-size:11px;padding:3px 7px;border-radius:6px;font-weight:700;pointer-events:none}
-#errBox{display:none;background:#7a2020;color:#fff;padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px}
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#162c32"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="description" content="에르디아의 여섯 영웅과 함께하는 세로형 3D 전략 RPG"><title>cnation TACTICS · 아르카 연대기</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png"><style>
+:root{color-scheme:dark;--ink:#183139;--paper:#f4f0e4;--gold:#e7bd70;--mint:#8fe5b4;--muted:#94aaa7;--line:#ffffff20;--blue:#7acbe8}*{box-sizing:border-box}body{margin:0;background:#0a171e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#f6f2e7;font-size:16px;overscroll-behavior:none}button,input,select{font:inherit}button{cursor:pointer;border:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}button:disabled{opacity:.32;cursor:default}button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}#app{width:100%;max-width:500px;height:100dvh;min-height:560px;margin:auto;position:relative;background:#1e3a40;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 90px #0008}header{height:78px;flex:none;padding:calc(10px + env(safe-area-inset-top)) 20px 12px;display:flex;align-items:center;justify-content:space-between;background:#162c32;z-index:2;height:calc(78px + env(safe-area-inset-top))}.eyebrow{font-size:11px;letter-spacing:2.8px;color:var(--gold);font-weight:700}.brand{font-family:Georgia,serif;font-size:21px;letter-spacing:2px;margin-top:3px}.brand small{font:11px sans-serif;letter-spacing:1px}.iconbtn{background:#ffffff0c;border:1px solid #ffffff1e;color:inherit;min-width:42px;height:42px;border-radius:50%;font-size:20px;display:inline-grid;place-items:center}.toolbar{display:flex;gap:8px}.stagebar{position:absolute;top:14px;left:18px;right:18px;pointer-events:none;display:flex;justify-content:space-between;align-items:start;z-index:2}.stagebar>div:first-child{max-width:calc(100% - 85px)}.stagebar h2{font-size:19px;margin:5px 0;color:#fff;text-shadow:0 2px 6px #15333e}.stagebar .tag{font-size:11px;letter-spacing:1.5px;color:#e5eee2}.pill{background:#132e32e6;padding:8px 11px;border:1px solid #92bcac44;border-radius:5px;font-size:12px}.objective{font-size:12px;color:#d0e3d8;text-shadow:0 1px 3px #000}.viewport{position:relative;flex:1;min-height:180px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#50877d,#25494e 65%,#1d343d)}canvas{width:100%;height:100%;display:block;touch-action:none}.viewtools{position:absolute;right:12px;bottom:42px;display:flex;flex-direction:column;gap:6px}.viewtools button{width:34px;height:34px;min-width:34px;font-size:17px;background:#112c35a8;border-color:#ffffff22}.legend{position:absolute;bottom:12px;left:16px;right:16px;display:flex;gap:12px;align-items:center;color:#cee0d7;font-size:11px;letter-spacing:.3px;pointer-events:none}.legend span:before{content:"";width:6px;height:6px;display:inline-block;border-radius:50%;background:var(--mint);margin-right:5px}.legend span:nth-child(2):before{background:#ed8b7e}.legend em{margin-left:auto;font-style:normal;opacity:.7}.unit-label{position:absolute;pointer-events:none;transform:translate(-50%,-100%);width:34px;text-align:center}.unit-label .hp{height:4px;background:#14262ad9;border:1px solid #0003;border-radius:3px;overflow:hidden}.unit-label .hp i{display:block;height:100%;background:#8fe5b4}.unit-label.enemy .hp i{background:#ed8b7e}.unit-label .done{font-size:13px;text-shadow:0 1px 3px black;color:#fff}.float{position:absolute;pointer-events:none;font-weight:900;font-size:24px;color:#fff3cc;text-shadow:0 2px 2px #162c32;animation:float 1s ease-out forwards;z-index:4;transform:translateX(-50%)}@keyframes float{to{translate:0 -60px;opacity:0}}#banner{position:absolute;top:45%;left:0;right:0;z-index:4;text-align:center;pointer-events:none;background:#122c32e8;letter-spacing:5px;font-family:Georgia,serif;padding:19px 0;color:var(--gold);font-size:23px;opacity:0;transition:opacity .2s}#banner.show{opacity:1}.panel{background:var(--paper);color:var(--ink);padding:12px 18px calc(12px + env(safe-area-inset-bottom));flex:none;border-top:3px solid #c5ac72;z-index:3}.party-strip{display:flex;gap:8px;margin-bottom:9px;overflow-x:auto;scrollbar-width:none}.party-chip{border:1px solid #b8c3b4;background:#e7e7d9;border-radius:6px;min-width:44px;height:34px;position:relative;font-size:17px;color:var(--ink)}.party-chip.active{border:2px solid #23745d;background:#d3e6d8}.party-chip.spent{opacity:.5}.party-chip small{position:absolute;bottom:1px;right:2px;font-size:10px}.unitrow{display:flex;gap:12px;align-items:center}.portrait{width:48px;height:52px;display:grid;place-items:center;flex:none;border-radius:6px;font-size:28px;background:#d3ddcd;border:1px solid #9dad9e}.unitinfo{flex:1;min-width:0}.unitname{display:flex;align-items:baseline;gap:7px;font-weight:800;font-size:19px}.unitname small{font-size:11px;font-weight:500;color:#60726b}.bars{display:flex;gap:10px;margin-top:7px}.statbar{flex:1;font-size:10px;font-weight:700}.statbar .numbers{display:flex;justify-content:space-between;margin-bottom:4px}.track{background:#cfd5c7;height:5px;border-radius:3px;overflow:hidden}.track i{display:block;height:100%;background:#38836c}.track.mp i{background:#5c85a1}.unitstats{margin:10px 0;font-size:11px;color:#61756c;display:flex;justify-content:space-between}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.action{background:#e4e6d9;border:1px solid #c1cab9;border-radius:6px;min-height:52px;color:#30493f;font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}.action b{font-size:19px;font-weight:400}.action.active{background:#235b4d;color:#f4f0dc;border-color:#235b4d}.turnrow{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:10px}.hint{font-size:12px;color:#66786d;line-height:1.45;flex:1}.endturn{background:#1c3439;color:#fff5df;border-radius:5px;padding:11px 13px;font-size:12px;white-space:nowrap}.forecast{margin-bottom:12px;padding:11px 12px;border-radius:7px;background:#e5dfcd;border:1px solid #c9b788;font-size:13px;line-height:1.55}.forecast strong{font-size:18px;color:#a1513e}.forecast .confirmrow{display:flex;gap:8px;margin-top:8px}.forecast button{padding:9px 13px;border-radius:5px;background:#1c5c4c;color:white;font-size:13px}.forecast .cancel{background:#d0d3c5;color:#263d37}.overlay{position:absolute;inset:0;background:#0b1d24b0;z-index:10;display:flex;flex-direction:column;justify-content:end;backdrop-filter:blur(5px)}.overlay[hidden], [hidden]{display:none!important}.sheet{background:var(--paper);color:var(--ink);max-height:88%;overflow:auto;border-radius:20px 20px 0 0;padding:24px 22px calc(25px + env(safe-area-inset-bottom));box-shadow:0 -12px 70px #0003}.sheethead{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.sheet h2{font-family:Georgia,serif;font-size:26px;margin:0}.sheet h3{font-size:17px;margin:20px 0 10px}.sheet p{font-size:14px;line-height:1.7;color:#586d65}.sheet .iconbtn{color:#345249;background:#e3e6d9;border-color:#bdc8b8}.sheet .eyebrow{color:#7e7658;font-size:10px;letter-spacing:2px;margin-bottom:5px}.primary,.secondary{width:100%;padding:14px;border-radius:7px;background:#235b4d;color:#fff8e5;font-size:15px;font-weight:700;margin-top:10px}.secondary{background:#e0e4d5;border:1px solid #bdc7b6;color:#294b3f}.row{display:flex;gap:9px;align-items:center;justify-content:space-between}.row>*{min-width:0}.choice{border:1px solid #c2cbb9;padding:12px;border-radius:7px;background:#e6e8dc;color:#29483f;margin:5px 0;text-align:left;width:100%;font-size:14px;line-height:1.5}.choice.on{border-color:#377e63;background:#d8e5d7}.choice small{display:block;color:#6e7a6c;font-size:12px;margin-top:3px}.choice strong{float:right;color:#36765d}.chaptertabs{display:flex;gap:7px;overflow-x:auto;margin:14px -22px 18px;padding:0 22px;scrollbar-width:none}.chaptertabs button{border:1px solid #bfccb9;border-radius:4px;background:#e3e7d8;padding:9px 12px;font-size:12px;white-space:nowrap;color:#335249}.chaptertabs button.on{background:#294f43;color:#fff1cd}.mission{display:flex;align-items:center;gap:13px;width:100%;padding:14px 0;color:#24463d;background:none;border-bottom:1px solid #d5dacb;text-align:left}.mission .node{width:34px;height:34px;display:grid;place-items:center;border:1px solid #a9b99f;transform:rotate(45deg);flex:none;border-radius:5px;background:#e5e6d7}.mission .node i{font-style:normal;transform:rotate(-45deg);font-size:13px}.mission.complete .node{background:#32684f;color:#fff6d7}.mission .name{font-size:15px;font-weight:700}.mission .sub{font-size:11px;color:#728071;margin-top:4px}.mission .level{margin-left:auto;font-size:12px;color:#64766b}.dialogue{border-left:3px solid #bda064;padding-left:15px;margin:20px 0}.dialogue b{font-size:13px;color:#906c31}.dialogue p{color:#324d43;font-size:16px;line-height:1.8;margin:8px 0}.title-screen{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;text-align:center;pointer-events:none;background:linear-gradient(#102b34dd,transparent 36%,transparent 57%,#102b34f5 87%);padding:40px 25px 34px}.title-screen .logo{margin-top:2vh;text-shadow:0 3px 30px #0008}.logo .cn{font-family:Georgia,serif;color:var(--gold);font-style:italic;font-size:22px;letter-spacing:3px}.logo h1{font-family:Georgia,serif;font-size:51px;font-weight:400;letter-spacing:5px;margin:4px 0 12px}.logo .sub{font-size:10px;letter-spacing:4px;color:#c4d8ce}.title-bottom{margin-top:auto;width:100%;pointer-events:auto}.title-bottom button{max-width:300px}.title-bottom .primary{background:#dfc180;color:#243933;border:1px solid #f0daa3}.title-bottom .secondary{background:#162f35bd;border-color:#829e835c;color:#e5e7d8}.title-bottom small{display:block;margin-top:20px;color:#aac0b4;font-size:10px;letter-spacing:1px}.title-screen .version{position:absolute;bottom:12px;font-size:10px;color:#6e9386}#toast{position:absolute;top:105px;left:50%;transform:translateX(-50%);z-index:30;background:#132b32ed;border:1px solid #adbc8355;padding:12px 16px;border-radius:7px;min-width:220px;max-width:90%;font-size:13px;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s}#toast.show{opacity:1}.badge{display:inline-block;border-radius:4px;padding:4px 7px;background:#d3dfcb;color:#436849;font-size:11px}.gold{color:#887030;font-size:14px;font-weight:700}.footnote{font-size:11px!important;color:#758372!important}.settings-row{padding:13px 0;border-bottom:1px solid #d4dccd;display:flex;justify-content:space-between;align-items:center;font-size:14px}.settings-row button,.settings-row select{background:#d9e2d0;border:1px solid #b7c5af;color:#355142;border-radius:5px;padding:8px 10px}.statsgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.statsgrid div{background:#e0e5d6;padding:10px;border-radius:6px;font-size:12px}.statsgrid b{display:block;font-size:18px;margin-top:4px}.danger{color:#985849}.battlelog{max-height:260px;overflow:auto;font-size:13px;line-height:1.8;color:#496356}.battlelog div{border-bottom:1px solid #d8ddcf;padding:5px 0}.result{text-align:center}.result .seal{font-size:52px;color:#a88a42}.result h2{font-size:33px;letter-spacing:2px}.result .rewards{padding:20px;background:#e1e5d6;border-radius:8px;margin:20px 0}.fileinput{display:none}/* Keep the tablet layout at 500:960 and fit the whole game to the visible screen. */
+@media(min-width:600px){html,body{height:100%;overflow:hidden}#app{position:fixed;top:0;left:50%;width:500px;max-width:none;height:960px;min-height:0;margin:0;transform:translateX(-50%) scale(var(--game-scale,1));transform-origin:50% 0;border-left:1px solid #ffffff17;border-right:1px solid #ffffff17}.title-screen .logo{margin-top:19.2px}}
+@media(max-height:700px) and (max-width:599px){header{height:60px;padding-top:8px}.panel{padding-top:10px;padding-bottom:10px}.party-strip{margin-bottom:7px}.party-chip{height:30px}.unitstats{margin:6px 0}.action{min-height:44px}.turnrow{margin-top:7px}.title-screen{padding-top:18px}.logo h1{font-size:40px}}
+#codexModel{width:100%;height:220px;background:radial-gradient(ellipse,#9abca8,#d8e2d0);border-radius:12px;margin-bottom:10px}.codex-card{border:1px solid #c2cbb7;border-radius:8px;padding:12px;margin:10px 0}.codex-card summary{cursor:pointer;font-weight:700;line-height:1.6}.sheet p{line-height:1.7}.title-bottom small{margin-top:10px}.title-bottom button{padding:12px;margin:6px auto}.title-screen .version{color:#bdd0c1}@media(max-height:700px) and (max-width:599px){.title-bottom p{margin:5px 0}.title-bottom button{padding:10px;margin:4px auto}.title-bottom small{margin-top:6px}}
+.custom-wide{width:100%;padding:12px;border-radius:6px;background:#d9e2d0;color:#355142;border:1px solid #b7c5af;margin:10px 0}.settings-row select{max-width:70%}.title-bottom button{padding:10px;margin:4px auto}.title-bottom small{margin-top:7px}@media(max-height:700px) and (max-width:599px){.title-bottom button{padding:8px;margin:3px auto}}
+.unit-label{width:100px}.hp-line{display:flex;align-items:center;justify-content:center;gap:3px}.hp-line .hp{width:32px;flex:none}.hp-value{font-size:10px;line-height:1.2;font-weight:800;color:#fff;background:transparent;padding:1px 0;white-space:nowrap;-webkit-text-stroke:.5px #000;paint-order:stroke fill;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000}.enemy-portrait{background:#e1c5ae;color:#875442}.enemy-details{display:grid;gap:5px;margin-top:10px;font-size:12px;line-height:1.45}.hit-report{border:1px solid #bca570;border-radius:6px;padding:7px 10px;margin-bottom:9px;background:#eee3c9;font-size:12px;line-height:1.5}.hit-report button{background:transparent;color:#725b38;font-size:20px;padding:0 5px}.hit-report-rows{max-height:66px;overflow:auto}.forecast-targets{max-height:126px;overflow:auto}.forecast-target{border-bottom:1px solid #c9b788;padding:5px 0}.target-info{background:transparent!important;color:#43665a!important;border:1px solid #9fae91;padding:4px 6px!important;margin:3px 0;font-size:11px!important;border-radius:4px}.forecast .confirmrow{margin-top:7px}
+.battle-active header{height:calc(42px + env(safe-area-inset-top));padding:calc(4px + env(safe-area-inset-top)) 14px 4px}.battle-active header .eyebrow{display:none}.battle-active header .brand{font-size:17px;letter-spacing:1px;margin:0}.battle-active header .iconbtn{height:34px;min-width:34px;font-size:17px}.party-chip{font-size:12px;min-width:44px;flex:1;padding:0 7px;white-space:nowrap}.party-strip{gap:6px}.model-portrait{display:block;width:100%;height:100%;object-fit:contain}.portrait:has(.model-portrait){overflow:hidden}.codex-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;overflow:visible;margin:14px 0 18px;padding:0}.codex-tabs button{min-width:0;width:100%;white-space:normal;line-height:1.3;text-align:center;padding:9px 4px}@media(max-width:430px){.codex-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:360px){.codex-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}#terrainModel{width:100%;height:230px;background:radial-gradient(ellipse,#86b8b3,#d9e5da);border-radius:12px;margin:4px 0 10px}.terrain-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}.terrain-choices button{border:1px solid #bfccb9;border-radius:5px;background:#e3e7d8;color:#335249;padding:10px 3px;font-size:13px}.terrain-choices button.on{background:#294f43;color:#fff1cd}.sheet.world-sheet{height:88%;max-height:88%;display:flex;flex-direction:column;overflow:hidden;padding:18px 18px calc(18px + env(safe-area-inset-bottom));gap:0}.world-sheet>*{flex-shrink:0}.world-sheet .sheethead{margin-bottom:10px}.world-sheet .sheethead h2{font-size:24px}.world-sheet .chaptertabs{margin:10px 0 8px;padding:0;min-height:36px}.world-sheet .chaptertabs button{padding:7px 10px}.world-sheet .map-heading{margin:5px 0 8px}.world-sheet .map-heading h3{margin:1px 0;font-size:20px}.world-sheet .journey-map{flex:1 1 0;min-height:180px;height:auto;margin:0}.world-sheet .map-actions{gap:8px;margin-top:10px}.world-sheet .map-actions button{margin:0;min-height:44px;padding:10px 4px;font-size:14px;flex:1}.world-sheet #resumeBattle{min-height:44px;margin-top:8px;padding:10px 4px;font-size:13px}
+@media(max-height:640px){.sheet.world-sheet{height:96%;max-height:96%;padding-top:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}.world-sheet .sheethead{margin-bottom:7px}}
+.choice.codex-unit-row{display:flex;align-items:center;gap:12px;padding:10px;margin:8px 0;min-width:0}.codex-unit-image{display:block;flex:0 0 78px;width:78px;height:94px;background:radial-gradient(ellipse,#b4cfb7,#dce5d6);border-radius:9px;pointer-events:none}.codex-unit-copy{display:block;flex:1;min-width:0}.codex-unit-copy b{font-size:15px;line-height:1.4}.codex-unit-copy small{font-size:12px;line-height:1.6;margin-top:5px;overflow-wrap:anywhere}@media(max-width:360px){.choice.codex-unit-row{gap:9px;padding:8px}.codex-unit-image{flex-basis:66px;width:66px;height:86px}.codex-unit-copy b{font-size:14px}.codex-unit-copy small{font-size:11px}}
+.skill-summary{display:flex;align-items:flex-start;gap:10px}.skill-summary-copy{flex:1;min-width:0}.skill-preview-wrap{flex:0 0 126px;width:126px;overflow:hidden;border-radius:8px;background:radial-gradient(ellipse,#b0d1c0,#dce5d6)}.skill-preview{display:block;width:126px;height:104px}.skill-preview-wrap figcaption{font-size:9px;color:#526b60;text-align:center;padding:0 3px 4px}.skill-preview-wrap{margin:0}.skill-summary-copy>b{display:block;line-height:1.4}.skill-summary-copy>small{margin-top:5px}@media(max-width:360px){.skill-preview-wrap{flex-basis:104px;width:104px}.skill-preview{width:104px;height:96px}.skill-summary{gap:7px}.skill-summary-copy>small{font-size:11px}}
 </style>
-</head>
-<body>
+<style>.skill-preview-wrap{flex:0 0 56%;width:56%}.skill-preview{width:100%;height:auto;aspect-ratio:1.7}.skill-summary{gap:8px}.skill-summary-copy{flex:1}.skill-summary-copy>small{font-size:11px}@media(max-width:360px){.skill-preview-wrap{flex-basis:54%;width:54%}.skill-preview{width:100%;height:auto;aspect-ratio:1.6}}</style>
 
-<div class="top-bar">
-<h1>cnation TACTICS · 3D 모델 업그레이드 프리뷰</h1>
-<button class="dl-btn" id="downloadBtn">💾 index.html 파일로 바로 저장</button>
-</div>
-<p class="desc">손가락이나 마우스로 각 캐릭터를 좌우로 드래그해 회전시켜 보세요. 모든 모델은 외부 이미지 없이 순수 Three.js 도형 병합(1 Draw Call)으로 렌더링됩니다.</p>
-<div id="errBox"></div>
+<style>
+.gear-thumb{width:82px;height:96px;position:relative;overflow:visible}.gear-thumb.rarity-1{box-shadow:0 0 13px #57acff88,inset 0 0 12px #74c9ff55;border:1px solid #68b9f5}.gear-thumb.rarity-2{box-shadow:0 0 16px #e8ba4f99,inset 0 0 14px #ffde7955;border:1px solid #d7ae48}.rarity-badge-1{color:#236baf;background:#d5eafa}.rarity-badge-2{color:#8a631d;background:#f5e8bc}.gear-inspect{display:block!important;width:100%;background:transparent!important;border:0!important;text-align:left;padding:0!important;color:inherit!important}.gear-copy .row button[disabled]{display:inline-block;opacity:.5}.selected-gear{border:2px solid #327fae;background:#e6f0ea}.equipment-compare{border:1px solid #c0cdb8;border-radius:10px;padding:12px;background:#edf1e5;margin:10px 0}.equipment-compare p{font-size:12px}.compare-items{display:grid;grid-template-columns:1fr 20px 1fr;gap:8px;align-items:center;text-align:center;margin:12px 0}.compare-items>div{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}.compare-items small{font-size:11px;overflow-wrap:anywhere}.gear-deltas>div{display:grid;grid-template-columns:55px 1fr 55px;gap:5px;padding:5px 0;border-bottom:1px solid #d5dece;font-size:12px}.gear-deltas b{text-align:right}.stat-up{color:#176dc0}.stat-down{color:#c33c38}.stat-even{color:#778777}.empty-compare{display:grid;place-items:center;width:82px;height:96px;background:#dfe6d7;border-radius:8px;font-size:13px}.equipment-compare #equipChosen{width:100%;margin-top:8px}.combat-table-wrap{overflow-x:auto}.gear-copy b{overflow-wrap:anywhere}.gear-row{align-items:center}.equip-slot img{object-fit:contain}
+@media(max-width:360px){.gear-thumb{width:68px;height:82px}.gear-copy small{font-size:11px}.gear-deltas>div{font-size:11px;grid-template-columns:48px 1fr 50px}.gear-row{gap:8px}}
+</style>
+<style>.equip-stage{grid-template-areas:"weapon hero armor" "accessory . accessory2"}.slot-3{grid-area:accessory2;min-height:86px}.slot-3 img{height:42px;width:44px}.slot-3 .equip-empty{line-height:32px}.accessory-targets button{flex:1;min-height:40px}.accessory-targets .on{background:#295e51;color:#fff}@media(max-width:430px){.slot-3{min-height:79px}}</style>
+<style>
+/* A single title logo; the shared header retains only small controls here. */
+#app.title-active header{position:absolute;top:0;left:0;right:0;z-index:6;height:calc(48px + env(safe-area-inset-top));padding:calc(8px + env(safe-area-inset-top)) 14px 6px;background:transparent;justify-content:flex-end}
+#app.title-active header>div:first-child{display:none}
+#app.title-active header .toolbar{gap:7px}
+#app.title-active header .iconbtn{min-width:34px;width:34px;height:34px;font-size:16px;background:#102d3480;border-color:#a4c0b82b}
+#app.title-active #title{padding:calc(62px + env(safe-area-inset-top)) 24px calc(32px + env(safe-area-inset-bottom))}
+#app.title-active #title .logo{margin:0;flex:none;text-shadow:0 2px 18px #0005}
+#app.title-active #title .logo .cn{font-size:15px;letter-spacing:2px;line-height:1.3}
+#app.title-active #title .logo h1{font-size:38px;letter-spacing:3px;line-height:1.12;margin:3px 0 8px}
+#app.title-active #title .logo .sub{font-size:8px;letter-spacing:2.4px;line-height:1.4;color:#b4cbc2}
+#app.title-active .viewtools,#app.title-active .legend{display:none}
+#app.title-active #title .version{bottom:calc(11px + env(safe-area-inset-bottom));font-size:10px;letter-spacing:.6px}
+@media(max-height:700px){#app.title-active #title{padding-top:calc(54px + env(safe-area-inset-top))}#app.title-active #title .logo h1{font-size:33px;margin-bottom:6px}#app.title-active #title .logo .cn{font-size:13px}}
+</style>
+<style>.victory-celebration{text-align:center}.victory-celebration h3{font-size:21px;margin:0 0 8px;color:#35715a}#victoryCast{height:240px;width:100%;background:radial-gradient(ellipse,#cae4ce,#eaf0df);border-radius:12px}.recovery-rule{font-size:12px!important;margin:8px 0!important;line-height:1.5!important}.recovery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:left}.recovery-grid>div{background:#e3ead9;border-radius:8px;padding:8px;min-width:0}.recovery-grid b,.recovery-grid span,.recovery-grid small{display:block;font-size:11px}.recovery-grid .track{margin:6px 0}.recovery-grid strong{color:#318166}.victory-potion{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid #ccb674;border-radius:10px;background:#f2e9cb;padding:10px;margin:12px 0;opacity:.25;transform:translateY(8px) scale(.96);transition:opacity .45s,transform .45s}.victory-potion.received{opacity:1;transform:none;box-shadow:0 0 14px #d9bf5d55}.victory-potion b{font-size:13px}.victory-potion small{display:block;font-size:11px;margin-top:5px;color:#66786c}.victory-rewards{font-size:12px!important;margin:6px 0!important}#victoryConfirm{width:100%;margin:10px 0 0}@media(max-height:700px){#victoryCast{height:170px}.recovery-grid{gap:5px}.recovery-grid>div{padding:5px}.victory-potion{margin:8px 0;padding:7px}}</style>
+<style>#criticalNotice{position:absolute;top:20%;left:0;right:0;z-index:8;pointer-events:none;text-align:center;color:#ffe69b;font-family:Georgia,serif;font-size:clamp(30px,8vw,44px);font-weight:bold;font-style:italic;text-shadow:0 3px 0 #8e4734,0 0 12px #572f24,1px 1px 3px #000;letter-spacing:1px;animation:critical-announce .45s ease-out both}@keyframes critical-announce{from{opacity:0;transform:scale(1.35)}to{opacity:1;transform:scale(1)}}</style>
+<style>#victoryCast{height:190px}.victory-loot{text-align:left;margin:8px 0}.victory-loot>b{font-size:12px}.victory-loot-strip{display:flex;gap:7px;overflow-x:auto;padding:6px 2px}.victory-loot-strip>div{flex:0 0 84px;text-align:center;opacity:0;transform:translateY(12px);transition:opacity .35s,transform .35s}.victory-loot-strip>div.received{opacity:1;transform:none}.loot-recovered-thumb{height:40px;width:44px;margin:auto;background:#d4e5ce;border-radius:6px}.victory-loot-strip small{display:block;font-size:9px;line-height:1.25}.victory-loot-strip strong{display:block;font-size:9px;color:#287956}.victory-celebration .recovery-grid>div{padding:6px}.victory-celebration .recovery-grid .track{margin:4px 0}.victory-celebration .victory-potion{margin:8px 0;padding:7px}@media(max-height:700px){#victoryCast{height:145px}}</style>
+<style>.victory-celebration #victoryConfirm{position:sticky;bottom:0;z-index:2;box-shadow:0 -6px 14px #f4f0e4}</style>
+<style>
+/* v0.7.2: Save manager, readable on narrow mobile screens. */
+.save-notice{padding:12px 13px;background:#e6eddf;border:1px solid #b7cbb7;border-radius:11px;color:#274a41;margin:8px 0 15px;font-size:12px;line-height:1.65}
+.save-notice b{color:#205343}.save-notice p{margin:7px 0}.save-notice p:last-child{margin-bottom:0}
+.save-slot{background:#eaf0e5;border:1px solid #c3d0be;border-radius:10px;padding:12px;margin:9px 0;color:#2a4d43}
+.save-slot>b{display:block;font-size:14px;margin-bottom:5px}.save-slot>small{display:block;line-height:1.55;color:#546e62;font-size:11px;overflow-wrap:anywhere;margin-bottom:9px}
+.save-slot-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.save-slot button{min-width:0;width:100%;margin:2px 0;padding:10px 5px;font-size:12px;min-height:39px}
+#slotList{min-height:60px}
+.save-mode-help{font-size:14px;line-height:1.75;color:#2e5548}
+.save-mode-options{display:grid;gap:9px;margin:12px 0}
+.save-mode-options .choice{text-align:left;width:100%;font-weight:800;min-height:62px}
+.save-mode-options .choice small{display:block;font-size:11px;font-weight:400;margin-top:4px}
+.save-mode-current{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#dfe9dd;border:1px solid #a8c5ad;padding:10px 12px;border-radius:9px;margin:5px 0 10px;flex-wrap:wrap}
+.save-mode-current b{color:#214d3f;font-size:14px}.save-mode-current small{font-size:11px;color:#4b6859}
+.save-mode-current button{width:auto;margin:0;padding:7px 10px;font-size:12px;min-height:36px}
 
-<div class="section-title">1. 인간형 적군 투구 디자인 3종 (피부 노출 제거 · 칙칙한 철제 톤 · 붉은 안광)</div>
-<div class="grid" id="enemyGrid"></div>
-
-<div class="section-title">2. 주인공 고정밀(High-Detail) 3D 모델링 비교 (카일 & 리아)</div>
-<div class="grid" id="heroGrid"></div>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    for (const reg of regs) reg.unregister();
-  });
-}
-document.getElementById('downloadBtn').addEventListener('click', () => {
-  const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'index.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-});
-</script>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-
-window.addEventListener('error', e => {
-  const box = document.getElementById('errBox');
-  box.style.display = 'block';
-  box.textContent = '오류: ' + e.message;
-});
-
-const geo = {
-  box: new THREE.BoxGeometry(1, 1, 1),
-  ball: new THREE.SphereGeometry(1, 12, 10),
-  cone: new THREE.ConeGeometry(1, 1, 10),
-  cyl: new THREE.CylinderGeometry(1, 1, 1, 10),
-  rock: new THREE.DodecahedronGeometry(1, 0),
-  torus: new THREE.TorusGeometry(1, 0.22, 8, 16)
-};
-
-const sharedMat = new THREE.MeshToonMaterial({ vertexColors: true });
-
-function bake(parts) {
-  const arr = parts.map(p => {
-    const [type, pos, scale, col, rot = 0, rotX = 0, rotY = 0] = p;
-    let g = geo[type].index ? geo[type].toNonIndexed() : geo[type].clone();
-    g.scale(scale[0], scale[1], scale[2]);
-    if (rotX) g.rotateX(rotX);
-    if (rotY) g.rotateY(rotY);
-    if (rot) g.rotateZ(rot);
-    g.translate(pos[0], pos[1], pos[2]);
-    const color = new THREE.Color(col);
-    const a = new Float32Array(g.attributes.position.count * 3);
-    for (let i = 0; i < a.length; i += 3) {
-      a[i] = color.r; a[i + 1] = color.g; a[i + 2] = color.b;
-    }
-    g.setAttribute('color', new THREE.BufferAttribute(a, 3));
-    return g;
-  });
-  const m = mergeGeometries(arr, false);
-  arr.forEach(g => g.dispose());
-  return m;
-}
-
-function buildEnemyHelmetA() {
-  const p = [], add = (...a) => p.push(a);
-  const armor = 0x3e434c, darkIron = 0x262930, rustRed = 0x6e3535, glowRed = 0xff2e2e;
-  for (const x of [-0.13, 0.13]) {
-    add('cyl', [x, 0.16, 0], [0.085, 0.28, 0.095], darkIron);
-    add('box', [x, 0.05, 0.05], [0.15, 0.1, 0.23], 0x1d1f24);
-  }
-  add('cone', [0, 0.36, -0.02], [0.34, 0.52, 0.27], rustRed);
-  add('box', [0, 0.54, 0], [0.42, 0.44, 0.3], armor);
-  add('box', [0, 0.55, 0.16], [0.32, 0.36, 0.06], darkIron);
-  for (const x of [-0.3, 0.3]) {
-    add('box', [x, 0.67, 0], [0.22, 0.18, 0.32], darkIron);
-    add('cone', [x * 1.15, 0.82, 0], [0.06, 0.18, 0.06], 0x575c66, x < 0 ? 0.35 : -0.35);
-    add('cyl', [x, 0.46, 0.02], [0.07, 0.34, 0.07], armor, x > 0 ? 0.15 : -0.15);
-  }
-  add('cyl', [0, 0.91, 0], [0.25, 0.34, 0.25], armor);
-  add('ball', [0, 1.06, 0], [0.25, 0.14, 0.25], darkIron);
-  add('box', [0, 0.88, 0.15], [0.34, 0.26, 0.18], darkIron);
-  add('box', [0, 0.93, 0.245], [0.26, 0.045, 0.02], glowRed);
-  for (const y of [0.83, 0.78]) add('box', [0, y, 0.245], [0.18, 0.018, 0.02], 0x111317);
-  for (const x of [-0.22, 0.22]) add('cone', [x, 1.14, 0.02], [0.06, 0.24, 0.06], rustRed, x < 0 ? 0.45 : -0.45);
-  add('box', [-0.42, 0.48, 0.16], [0.36, 0.56, 0.08], darkIron);
-  add('box', [-0.42, 0.48, 0.21], [0.26, 0.44, 0.03], rustRed);
-  add('cyl', [0.39, 0.68, 0.1], [0.045, 1.05, 0.045], 0x4a3c31);
-  add('cone', [0.39, 1.28, 0.1], [0.09, 0.32, 0.08], 0x7b828a);
-  return { parts: p, team: 'enemy' };
-}
-
-function buildEnemyHelmetB() {
-  const p = [], add = (...a) => p.push(a);
-  const slate = 0x45525c, charcoal = 0x283036, bronze = 0x6e6250, glowRed = 0xff3b30;
-  for (const x of [-0.12, 0.12]) {
-    add('cyl', [x, 0.16, 0], [0.08, 0.28, 0.085], charcoal);
-    add('box', [x, 0.05, 0.05], [0.14, 0.09, 0.22], 0x1c2226);
-  }
-  add('cyl', [0, 0.48, 0], [0.24, 0.5, 0.22], slate);
-  add('box', [0, 0.56, 0.13], [0.38, 0.42, 0.14], charcoal);
-  for (const x of [-0.32, 0.32]) {
-    add('rock', [x, 0.72, 0], [0.18, 0.15, 0.2], charcoal);
-    add('cyl', [x, 0.47, 0.04], [0.068, 0.34, 0.068], slate);
-  }
-  add('ball', [0, 0.93, 0], [0.26, 0.28, 0.26], slate);
-  add('box', [0, 0.87, 0.14], [0.35, 0.27, 0.2], charcoal);
-  add('box', [0, 0.92, 0.245], [0.26, 0.055, 0.02], 0x0e1114);
-  add('box', [0, 0.83, 0.245], [0.055, 0.18, 0.02], 0x0e1114);
-  for (const x of [-0.08, 0.08]) add('ball', [x, 0.92, 0.25], [0.032, 0.024, 0.02], glowRed);
-  add('box', [0, 1.16, -0.02], [0.06, 0.22, 0.34], bronze);
-  add('cone', [0, 1.31, 0.04], [0.07, 0.22, 0.12], charcoal);
-  add('box', [0.38, 0.62, 0.12], [0.1, 0.82, 0.05], 0x6f7a80);
-  add('cone', [0.38, 1.09, 0.12], [0.09, 0.22, 0.05], 0x6f7a80);
-  add('box', [0.38, 0.24, 0.12], [0.26, 0.06, 0.1], bronze);
-  return { parts: p, team: 'enemy' };
-}
-
-function buildEnemyHelmetC() {
-  const p = [], add = (...a) => p.push(a);
-  const hood = 0x4a3f37, mask = 0x24201e, cloth = 0x695846, glowRed = 0xff453a;
-  for (const x of [-0.11, 0.11]) {
-    add('cyl', [x, 0.15, 0], [0.075, 0.26, 0.08], mask);
-    add('box', [x, 0.04, 0.05], [0.13, 0.08, 0.2], mask);
-  }
-  add('cone', [0, 0.42, -0.03], [0.34, 0.62, 0.28], cloth);
-  add('box', [0, 0.54, 0.12], [0.34, 0.38, 0.12], 0x3b322c);
-  add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, 0.65);
-  add('box', [0, 0.56, 0.19], [0.32, 0.05, 0.03], 0x826c53, -0.65);
-  add('ball', [0, 0.88, 0], [0.24, 0.25, 0.24], mask);
-  add('cone', [0, 1.12, -0.04], [0.34, 0.46, 0.32], hood);
-  add('box', [0, 0.99, 0.16], [0.38, 0.08, 0.18], hood);
-  add('cyl', [-0.07, 0.89, 0.23], [0.055, 0.04, 0.055], glowRed, 0, Math.PI / 2);
-  add('ball', [0.09, 0.89, 0.23], [0.025, 0.025, 0.02], glowRed);
-  for (const x of [-0.28, 0.28]) add('cyl', [x, 0.49, 0.05], [0.065, 0.32, 0.065], hood);
-  add('box', [0.4, 0.5, 0.15], [0.46, 0.07, 0.1], 0x3d312a);
-  add('box', [0.54, 0.5, 0.18], [0.07, 0.34, 0.07], 0x736354);
-  return { parts: p, team: 'enemy' };
-}
-
-function buildHighDetailKyle() {
-  const p = [], add = (...a) => p.push(a);
-  const skin = 0xf4cfa8, tunic = 0x2d7fa3, darkBlue = 0x1b4965, silver = 0xdce6ea, gold = 0xe8c166, hair = 0x7a4928, boot = 0x4a372b;
-  for (const s of [-1, 1]) {
-    const x = s * 0.125;
-    add('cyl', [x, 0.24, 0], [0.078, 0.22, 0.082], 0x324a5e);
-    add('cyl', [x, 0.12, 0.01], [0.082, 0.18, 0.09], boot);
-    add('box', [x, 0.035, 0.05], [0.135, 0.07, 0.21], 0x2b211b);
-    add('box', [x, 0.18, 0.085], [0.1, 0.06, 0.04], gold);
-    add('ball', [x, 0.23, 0.08], [0.065, 0.065, 0.04], silver);
-  }
-  add('cone', [0, 0.38, 0], [0.31, 0.36, 0.24], tunic);
-  add('box', [0, 0.34, 0.14], [0.14, 0.26, 0.04], 0xf2efe4);
-  add('box', [0, 0.34, 0.16], [0.06, 0.22, 0.03], gold);
-  add('cyl', [0, 0.44, 0], [0.235, 0.07, 0.205], boot);
-  add('box', [0, 0.44, 0.195], [0.1, 0.085, 0.04], gold);
-  add('cyl', [0, 0.59, 0], [0.23, 0.28, 0.19], tunic);
-  add('box', [0, 0.6, 0.08], [0.34, 0.26, 0.16], silver);
-  add('box', [0, 0.6, 0.165], [0.08, 0.22, 0.03], gold);
-  add('torus', [0, 0.73, 0.02], [0.18, 0.16, 0.18], 0xc84646, 0, Math.PI / 2);
-  add('box', [0, 0.48, -0.19], [0.46, 0.56, 0.06], darkBlue, 0, 0.12);
-  for (const s of [-1, 1]) add('cone', [s * 0.16, 0.44, -0.21], [0.16, 0.58, 0.08], 0x235c7d, s * -0.1, 0.14);
-  for (const s of [-1, 1]) {
-    const x = s * 0.31;
-    add('ball', [x, 0.69, 0], [0.13, 0.11, 0.14], silver);
-    add('box', [x, 0.64, 0], [0.15, 0.04, 0.16], gold);
-    add('cyl', [x * 1.05, 0.56, 0.02], [0.062, 0.18, 0.062], tunic, s * 0.14);
-    add('cyl', [x * 1.1, 0.43, 0.07], [0.065, 0.16, 0.065], silver, s * 0.08, -0.25);
-    add('ball', [x * 1.12, 0.35, 0.12], [0.062, 0.062, 0.062], skin);
-  }
-  add('cyl', [0, 0.76, 0], [0.09, 0.1, 0.09], skin);
-  add('ball', [0, 0.92, 0], [0.235, 0.25, 0.225], skin);
-  add('cyl', [0, 0.84, 0.03], [0.19, 0.14, 0.18], skin);
-  for (const s of [-1, 1]) {
-    add('ball', [s * 0.23, 0.9, 0], [0.045, 0.065, 0.035], skin);
-    add('ball', [s * 0.085, 0.91, 0.205], [0.042, 0.052, 0.02], 0xffffff);
-    add('ball', [s * 0.085, 0.91, 0.218], [0.028, 0.038, 0.018], 0x183442);
-    add('ball', [s * 0.072, 0.925, 0.228], [0.011, 0.011, 0.01], 0xffffff);
-    add('box', [s * 0.088, 0.975, 0.21], [0.068, 0.018, 0.02], hair, s * -0.15);
-  }
-  add('cone', [0, 0.88, 0.23], [0.022, 0.04, 0.03], 0xe2b68d, 0, Math.PI / 2);
-  add('box', [0, 0.825, 0.215], [0.06, 0.014, 0.015], 0xb87664);
-  add('ball', [0, 1.0, -0.02], [0.25, 0.21, 0.24], hair);
-  add('box', [0, 0.94, -0.16], [0.42, 0.24, 0.14], hair);
-  add('box', [0, 1.01, 0.215], [0.3, 0.04, 0.03], gold);
-  add('rock', [0, 1.01, 0.23], [0.04, 0.045, 0.02], 0x35e0ff);
-  add('cone', [-0.06, 1.04, 0.2], [0.07, 0.18, 0.06], hair, 2.7, 0.3);
-  add('cone', [0.07, 1.05, 0.19], [0.08, 0.2, 0.06], hair, -2.6, 0.3);
-  for (const s of [-1, 1]) add('cone', [s * 0.21, 0.92, 0.12], [0.055, 0.2, 0.06], hair, Math.PI, 0.15);
-  add('cyl', [0.36, 0.36, 0.14], [0.035, 0.22, 0.035], 0x5c3a24);
-  add('ball', [0.36, 0.24, 0.14], [0.055, 0.055, 0.055], gold);
-  add('box', [0.36, 0.46, 0.14], [0.24, 0.05, 0.09], gold);
-  add('rock', [0.36, 0.46, 0.18], [0.045, 0.055, 0.03], 0x3de0ff);
-  add('box', [0.36, 0.78, 0.14], [0.085, 0.6, 0.035], silver);
-  add('box', [0.36, 0.76, 0.16], [0.025, 0.48, 0.02], 0x79d7f7);
-  add('cone', [0.36, 1.15, 0.14], [0.062, 0.18, 0.03], silver);
-  add('box', [-0.38, 0.48, 0.16], [0.28, 0.38, 0.05], gold);
-  add('box', [-0.38, 0.48, 0.18], [0.23, 0.33, 0.04], 0x265f82);
-  add('box', [-0.38, 0.48, 0.205], [0.05, 0.24, 0.02], gold);
-  add('box', [-0.38, 0.52, 0.205], [0.16, 0.05, 0.02], gold);
-  return { parts: p, team: 'ally' };
-}
-
-function buildHighDetailRia() {
-  const p = [], add = (...a) => p.push(a);
-  const skin = 0xf7d7b5, lilac = 0xb589d6, deepPurple = 0x6b458c, cream = 0xfaf3e0, gold = 0xf2cf72, hair = 0xebebf5;
-  for (const s of [-1, 1]) {
-    const x = s * 0.1;
-    add('cyl', [x, 0.14, 0], [0.06, 0.22, 0.06], cream);
-    add('box', [x, 0.04, 0.04], [0.11, 0.07, 0.18], deepPurple);
-    add('box', [x, 0.06, 0.09], [0.06, 0.03, 0.03], gold);
-  }
-  add('cone', [0, 0.28, 0], [0.35, 0.34, 0.31], cream);
-  add('cone', [0, 0.35, 0], [0.33, 0.42, 0.29], lilac);
-  add('torus', [0, 0.18, 0], [0.31, 0.07, 0.28], gold, 0, Math.PI / 2);
-  add('cyl', [0, 0.56, 0], [0.185, 0.26, 0.16], deepPurple);
-  add('cone', [0, 0.64, 0], [0.27, 0.18, 0.23], lilac, Math.PI);
-  add('ball', [0, 0.59, 0.17], [0.075, 0.085, 0.045], 0xffe885);
-  for (const s of [-1, 1]) add('cone', [s * 0.1, 0.57, 0.17], [0.045, 0.11, 0.03], cream, s * 1.2);
-  for (const s of [-1, 1]) {
-    const x = s * 0.24;
-    add('ball', [x, 0.64, 0], [0.095, 0.095, 0.095], lilac);
-    add('cone', [x * 1.12, 0.49, 0.04], [0.09, 0.22, 0.09], lilac, s * 0.15);
-    add('ball', [x * 1.16, 0.38, 0.08], [0.052, 0.052, 0.052], skin);
-  }
-  add('cyl', [0, 0.74, 0], [0.075, 0.09, 0.075], skin);
-  add('ball', [0, 0.9, 0], [0.23, 0.24, 0.22], skin);
-  for (const s of [-1, 1]) {
-    add('ball', [s * 0.22, 0.89, 0], [0.04, 0.055, 0.03], skin);
-    add('ball', [s * 0.082, 0.89, 0.198], [0.042, 0.054, 0.02], 0xffffff);
-    add('ball', [s * 0.082, 0.89, 0.212], [0.03, 0.042, 0.018], 0x6f3aa8);
-    add('ball', [s * 0.07, 0.908, 0.222], [0.012, 0.012, 0.01], 0xffffff);
-    add('ball', [s * 0.13, 0.84, 0.195], [0.035, 0.02, 0.01], 0xf2a7b3);
-    add('box', [s * 0.082, 0.96, 0.2], [0.055, 0.014, 0.015], 0xb8b5c9, s * 0.1);
-    add('cone', [s * 0.2, 0.75, 0.1], [0.055, 0.28, 0.055], hair, Math.PI, -0.1);
-    add('cone', [s * 0.18, 0.65, -0.14], [0.085, 0.45, 0.075], hair, Math.PI);
-  }
-  add('cone', [0, 0.865, 0.22], [0.018, 0.032, 0.025], 0xe8bc96, 0, Math.PI / 2);
-  add('box', [0, 0.815, 0.205], [0.045, 0.013, 0.012], 0xd47b81);
-  add('ball', [0, 0.98, -0.02], [0.24, 0.18, 0.23], hair);
-  for (const x of [-0.08, 0, 0.08]) add('cone', [x, 0.98, 0.195], [0.055, 0.14, 0.04], hair, Math.PI);
-  add('cyl', [0, 1.03, -0.01], [0.38, 0.035, 0.36], deepPurple, 0, -0.1);
-  add('cone', [0, 1.25, -0.04], [0.25, 0.46, 0.24], lilac, 0, -0.15);
-  add('cone', [0, 1.48, -0.12], [0.09, 0.18, 0.09], lilac, 0, -0.45);
-  add('cyl', [0, 1.07, -0.02], [0.23, 0.055, 0.22], cream, 0, -0.1);
-  for (const s of [-1, 1]) add('cone', [s * 0.09, 1.08, 0.2], [0.05, 0.12, 0.04], cream, s * 1.35);
-  add('cyl', [0.36, 0.64, 0.06], [0.028, 1.12, 0.028], 0x8c6d46);
-  add('ball', [0.36, 0.09, 0.06], [0.048, 0.048, 0.048], gold);
-  add('torus', [0.36, 1.24, 0.06], [0.13, 0.18, 0.13], gold);
-  add('rock', [0.36, 1.24, 0.06], [0.095, 0.125, 0.095], 0xe29eff);
-  for (const s of [-1, 1]) add('cone', [0.36 + s * 0.16, 1.26, 0.06], [0.045, 0.18, 0.04], cream, s * -0.65);
-  return { parts: p, team: 'ally' };
-}
-
-const sharedRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-sharedRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-sharedRenderer.outputColorSpace = THREE.SRGBColorSpace;
-
-const sharedScene = new THREE.Scene();
-sharedScene.add(new THREE.HemisphereLight(0xeef7e1, 0x223842, 2.5));
-const dirLight = new THREE.DirectionalLight(0xfff0cf, 3.0);
-dirLight.position.set(-3, 6, 5);
-sharedScene.add(dirLight);
-
-const sharedCamera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
-sharedCamera.position.set(0, 1.25, 3.55);
-sharedCamera.lookAt(0, 0.68, 0);
-
-const enemyConfigs = [
-  { title: '투구 A안 · 제국 중갑 보병', desc: '살구색 피부를 완전히 덮는 다크 스틸 버킷 투구 + 붉은 일자형 바이저 안광', build: buildEnemyHelmetA },
-  { title: '투구 B안 · 강철 척후병', desc: 'T자형 암흑 숨구멍과 두 개의 붉은 안광 + 정수리 강철 볏으로 위압감 강조', build: buildEnemyHelmetB },
-  { title: '투구 C안 · 사막 암살 궁수', desc: '브란과 헷갈리던 맨얼굴 대신 검은 철가면 + 붉은 저격 렌즈 + 잿빛 후드 착용', build: buildEnemyHelmetC }
-];
-
-const heroConfigs = [
-  { title: '고정밀 카일 (High-Detail)', desc: '눈동자·눈썹·귀·앞머리 가르마·레이어드 견갑·벨트·무릎 보호대·망토·성기사 검/방패 조형', build: buildHighDetailKyle },
-  { title: '고정밀 리아 (High-Detail)', desc: '자수정 눈동자·볼터치·은발 옆머리 타래·챙 넓은 마녀 모자·프릴 스커트·날개 지팡이 조형', build: buildHighDetailRia }
-];
-
-const viewers = [];
-
-function createCard(container, cfg, isHero) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <div class="canvas-wrap"><canvas></canvas><span class="poly-badge"></span></div>
-    <span class="tag ${isHero ? 'hero' : 'enemy'}">${isHero ? '아군 영웅 (1 Draw Call)' : '적군 몬스터 (피부 노출 0%)'}</span>
-    <h3>${cfg.title}</h3>
-    <p>${cfg.desc}</p>
-  `;
-  container.appendChild(card);
-
-  const canvas = card.querySelector('canvas');
-  const ctx2d = canvas.getContext('2d');
-  const data = cfg.build();
-  const bakedGeo = bake(data.parts);
-  const tris = Math.round(bakedGeo.attributes.position.count / 3);
-  card.querySelector('.poly-badge').textContent = `${data.parts.length} 파츠 · ${tris} 삼각형`;
-
-  const group = new THREE.Group();
-  const body = new THREE.Mesh(bakedGeo, sharedMat);
-  group.add(body);
-
-  const ringGeo = data.team === 'ally'
-    ? new THREE.RingGeometry(0.35, 0.42, 32)
-    : new THREE.RingGeometry(0.35, 0.42, 6);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: data.team === 'ally' ? 0x3ef2d6 : 0xd9383a,
-    side: THREE.DoubleSide
-  });
-  const ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.y = 0.02;
-  group.add(ring);
-
-  let dragging = false, prevX = 0, rotY = 0.35;
-  canvas.addEventListener('pointerdown', e => { dragging = true; prevX = e.clientX; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (!dragging) return; rotY += (e.clientX - prevX) * 0.015; prevX = e.clientX; });
-  canvas.addEventListener('pointerup', () => dragging = false);
-  canvas.addEventListener('pointercancel', () => dragging = false);
-
-  viewers.push({ canvas, ctx2d, group, body, getRot: () => rotY, addRot: d => { if (!dragging) rotY += d; } });
-}
-
-enemyConfigs.forEach(c => createCard(document.getElementById('enemyGrid'), c, false));
-heroConfigs.forEach(c => createCard(document.getElementById('heroGrid'), c, true));
-
-function animate(ms) {
-  requestAnimationFrame(animate);
-  const dpr = sharedRenderer.getPixelRatio();
-  for (const v of viewers) {
-    const rect = v.canvas.getBoundingClientRect();
-    if (rect.bottom < 0 || rect.top > window.innerHeight || !rect.width || !rect.height) continue;
-
-    const w = Math.round(rect.width), h = Math.round(rect.height);
-    sharedRenderer.setSize(w, h, false);
-    sharedCamera.aspect = w / h;
-    sharedCamera.updateProjectionMatrix();
-
-    v.addRot(0.008);
-    v.group.rotation.y = v.getRot();
-    v.body.position.y = Math.sin(ms * 0.0035) * 0.025;
-
-    sharedScene.add(v.group);
-    sharedRenderer.render(sharedScene, sharedCamera);
-    sharedScene.remove(v.group);
-
-    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
-    if (v.canvas.width !== pw || v.canvas.height !== ph) {
-      v.canvas.width = pw;
-      v.canvas.height = ph;
-    }
-    v.ctx2d.clearRect(0, 0, pw, ph);
-    v.ctx2d.drawImage(sharedRenderer.domElement, 0, 0, pw, ph);
-  }
-}
-requestAnimationFrame(animate);
-</script>
-</body>
-</html>
+.affinity-forecast{display:flex;flex-direction:column;gap:3px;margin:6px 0;padding:7px 9px;border:1px solid rgba(169,190,170,.3);border-radius:9px;background:rgba(34,57,56,.18);font-size:12px;line-height:1.55}
+.affinity-forecast.advantage{border-color:rgba(105,212,156,.55);background:rgba(43,116,82,.17)}
+.affinity-forecast.resisted{border-color:rgba(232,159,117,.5);background:rgba(137,79,59,.15)}
+.affinity-forecast span{display:block}
+.balance-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 9px;margin:8px 0}.balance-report-grid span{font-size:12px;color:#c5d5c9}.balance-report-grid strong{color:#fff}.codex-card .balance-report-grid{max-width:100%}@media(max-width:350px){.balance-report-grid{grid-template-columns:1fr}}
+</style></head><body><main id="app" class="title-active"><header><div><div class="eyebrow">THE ARCA CHRONICLE</div><div class="brand"><small>cnation</small> TACTICS</div></div><div class="toolbar"><button id="sound" class="iconbtn" aria-label="효과음 켜기 또는 끄기">♪</button><button id="menu" class="iconbtn" aria-label="메뉴">☰</button></div></header><section class="viewport" id="viewport"><canvas id="canvas" aria-label="3D 전장. 캐릭터와 타일을 탭하세요."></canvas><div id="labels"></div><div class="stagebar" id="stagebar"><div><div class="tag" id="chapterlabel"></div><h2 id="stagetitle"></h2><div class="objective" id="objective"></div></div><div class="pill" id="turn"></div></div><div class="viewtools"><button id="rotate" class="iconbtn" aria-label="시점 90도 회전">↻</button><button id="zoomIn" class="iconbtn" aria-label="확대">＋</button><button id="zoomOut" class="iconbtn" aria-label="축소">−</button><button id="resetCam" class="iconbtn" aria-label="시점 초기화">◎</button></div><div class="legend"><span>아군</span><span>적군</span><em>드래그 이동 · 두 손가락 확대</em></div><div id="banner"></div><div id="criticalNotice" hidden>Critical !!</div></section><section class="panel" id="panel"></section><div id="title" class="title-screen"><div class="logo"><div class="cn">cnation</div><h1>TACTICS</h1><div class="sub">THE ARCA CHRONICLE</div></div><div class="title-bottom"><p style="font-size:13px;color:#c6d5c7;line-height:1.8">잠든 코어가 깨어났다.<br>여섯 영웅의 여정이 시작된다.</p><button id="continue" class="primary">스토리 이어하기</button><button id="newGame" class="secondary">📖 스토리 모드 · 새 게임</button><button id="missionGameBtn" class="secondary">⚔️ 미션 모드</button><button id="encyclopediaBtn" class="secondary">백과사전</button><small>3D TACTICAL RPG · 아르카 연대기</small></div><div class="version">v0.7.23 · ARCA CHRONICLE</div></div><div id="overlay" class="overlay" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div><div id="toast" role="status"></div><input type="file" id="import" class="fileinput" accept="application/json,.json"></main><script>
+// Uniform tablet scaling. Recompute when rotating or when browser bars change height.
+(()=>{
+ const root=document.documentElement,tablet=window.matchMedia('(min-width:600px)');
+ let frame=0,lastScale=null;
+ function fitGame(){
+  frame=0;
+  const view=window.visualViewport;
+  const width=root.clientWidth||window.innerWidth;
+  const height=view&&view.scale===1?view.height:window.innerHeight;
+  const scale=tablet.matches?Math.min(width/500,height/960):1;
+  if(!Number.isFinite(scale)||scale<=0||scale===lastScale)return;
+  lastScale=scale;root.style.setProperty('--game-scale',String(scale));
+  window.dispatchEvent(new Event('tactics-layout'));
+ }
+ function scheduleFit(){if(!frame)frame=requestAnimationFrame(fitGame);}
+ window.addEventListener('resize',scheduleFit);
+ window.visualViewport?.addEventListener('resize',scheduleFit);
+ tablet.addEventListener('change',scheduleFit);
+ fitGame();
+})();
+</script><script>
+// BGM을 추가할 때 아래 빈 문자열에 파일 경로를 넣으세요. 예: "audio/battle.mp3"
+window.TACTICS_BGM={title:"",world:"",battle:"",boss:"",victory:""};
+</script><script>window.TACTICS_BUILD="0.7.22-balance";</script><script defer src="game.js?v=0.7.22-balance"></script><script>window.addEventListener('load',()=>{if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});setTimeout(()=>{if(!window.TACTICS_READY){const e=document.getElementById('toast');e.textContent='게임을 불러오지 못했습니다. game.js 파일과 WebGL 지원 여부를 확인하세요.';e.classList.add('show')}},10000)});</script></body></html>
