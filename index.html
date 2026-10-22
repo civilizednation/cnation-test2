@@ -2,261 +2,728 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>cnation TACTICS - High-Precision Kyle 3D Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>cnation TACTICS - 카일(Kyle) 컨셉아트 3D 정밀 구현</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d181d;color:#f4f0e4;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;height:100dvh;overflow:hidden}
-canvas{width:100%;height:100%;display:block;cursor:grab}
-#info{position:absolute;top:16px;left:16px;background:rgba(14,28,33,0.88);border:1px solid #3c6c75;padding:12px 16px;border-radius:10px;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,0.5)}
-h1{font-size:16px;color:#a8e6cf;margin-bottom:4px}
-p{font-size:12px;color:#b2c9c2}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+body{background:#121b22;color:#f4f0e4;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{background:#17232c;border-bottom:1px solid #2d4250;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;z-index:10}
+.title-wrap h1{font-size:15px;color:#e8c166;letter-spacing:0.5px}
+.title-wrap p{font-size:11px;color:#9ab0be;margin-top:2px}
+.top-btns{display:flex;gap:6px}
+button{border:1px solid #385163;background:#21323e;color:#dce7ee;border-radius:7px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;touch-action:manipulation}
+button.active{background:#2d7fa3;color:#fff;border-color:#7ce0ff;box-shadow:0 0 10px rgba(45,127,163,0.5)}
+button.gold{background:#e8c166;color:#17232c;border-color:#ffe49e;font-weight:800}
+#viewport{position:relative;flex:1;width:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#2a3c4a,#152028 70%,#0d141a)}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+.hud-panel{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;pointer-events:none;z-index:10}
+.bar-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;pointer-events:auto;scrollbar-width:none}
+.bar-row::-webkit-scrollbar{display:none}
+.badge-info{position:absolute;top:12px;right:12px;background:rgba(15,24,30,0.82);border:1px solid #385163;padding:6px 10px;border-radius:8px;font-size:11px;color:#a8e6cf;pointer-events:none}
+#errBanner{display:none;position:absolute;top:12px;left:12px;right:12px;background:#8c2323;color:#fff;padding:10px;border-radius:8px;font-size:12px;z-index:30}
 </style>
 </head>
 <body>
 
-<div id="info">
-  <h1>카일 (Kyle) · 고정밀 절차적 폴리곤 모델</h1>
-  <p>마우스 드래그: 360도 회전 | 휠: 확대/축소</p>
+<header>
+  <div class="title-wrap">
+    <h1>⚔ 카일 (Kyle) · 7.5등신 로우폴리 정밀 모델</h1>
+    <p>드래그: 360° 회전 · 두 손가락/휠: 확대 · 하단 버튼: 뷰/포즈 전환</p>
+  </div>
+  <div class="top-btns">
+    <button id="wireBtn">와이어프레임 OFF</button>
+    <button class="gold" id="dlBtn">💾 HTML 저장</button>
+  </div>
+</header>
+
+<div id="viewport">
+  <canvas id="kyleCanvas"></canvas>
+  <div id="errBanner"></div>
+  <div class="badge-info" id="polyInfo">모델 생성 중...</div>
+  <div class="hud-panel">
+    <div class="bar-row" id="camBar">
+      <button class="active" data-cam="front">정면 뷰</button>
+      <button data-cam="quarter">3/4 뷰</button>
+      <button data-cam="side">측면 뷰</button>
+      <button data-cam="back">후면 (망토 엠블럼)</button>
+      <button data-cam="head">얼굴 클로즈업</button>
+    </div>
+    <div class="bar-row" id="poseBar">
+      <button class="active" data-pose="idle">대기 (Idle)</button>
+      <button data-pose="move">이동 (Move)</button>
+      <button data-pose="slash">일반 공격</button>
+      <button data-pose="skill">스킬 (강력한 베기)</button>
+      <button data-pose="guard">방어 (Guard)</button>
+      <button data-pose="victory">승리 (Victory)</button>
+    </div>
+  </div>
 </div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
-  }
+<!-- game.js가 같은 폴더에 있으면 내장된 CNATION3D 엔진을 즉시 로드합니다 -->
+<script src="game.js"></script>
+<script>
+// 서비스 워커 캐시 간섭 해제 및 HTML 다운로드 버튼
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
 }
+document.getElementById('dlBtn').addEventListener('click', () => {
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'kyle-3d-concept.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+});
+window.addEventListener('error', e => {
+  const b = document.getElementById('errBanner');
+  b.style.display = 'block';
+  b.textContent = '실행 오류: ' + e.message;
+});
 </script>
 
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+// 1. game.js 내장 CNATION3D 우선 사용 (없을 경우에만 CDN 폴백)
+let THREE = window.CNATION3D;
+if (!THREE) {
+  THREE = await import('https://unpkg.com/three@0.170.0/build/three.module.js');
+}
 
-// 1. 씬, 카메라, 렌더러 설정
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e1b20);
-scene.fog = new THREE.FogExp2(0x0e1b20, 0.04);
-
-const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 2.2, 5.6);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const viewport = document.getElementById('viewport');
+const canvas = document.getElementById('kyleCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.target.set(0, 1.1, 0);
-controls.maxPolarAngle = Math.PI / 2 + 0.05; // 바닥 아래로 내려가지 않음
-controls.minDistance = 2;
-controls.maxDistance = 10;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
 
-// 2. 조명 설정 (입체감 강조)
-const ambient = new THREE.AmbientLight(0xdff0ea, 1.3);
-scene.add(ambient);
-
-const keyLight = new THREE.DirectionalLight(0xfff3d1, 3.2);
-keyLight.position.set(4, 9, 6);
-keyLight.castShadow = true;
-keyLight.shadow.mapSize.width = 2048;
-keyLight.shadow.mapSize.height = 2048;
-keyLight.shadow.bias = -0.0001;
+// 2. 컨셉트 아트의 입체적인 플랫 셰이딩을 살리는 3점 조명
+scene.add(new THREE.HemisphereLight(0xe8f2f8, 0x1b2832, 1.65));
+const keyLight = new THREE.DirectionalLight(0xfff4dc, 2.8);
+keyLight.position.set(5, 8, 7);
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x76b4cc, 1.1);
-fillLight.position.set(-6, 4, -4);
-scene.add(fillLight);
+const rimLight = new THREE.DirectionalLight(0x6ec6ff, 1.4);
+rimLight.position.set(-6, 5, -6);
+scene.add(rimLight);
 
-// 3. 머티리얼 설정 (콘셉트 아트의 로우폴리 플랫 셰이딩)
-const mat = (col) => new THREE.MeshStandardMaterial({
-  color: col,
-  flatShading: true, // 각진 폴리곤 느낌의 핵심
-  roughness: 0.85,
-  metalness: 0.15
+const bottomFill = new THREE.DirectionalLight(0x3a5566, 0.7);
+bottomFill.position.set(0, -4, 4);
+scene.add(bottomFill);
+
+// 3. 컨셉트 아트 색상 팔레트 (이미지 우측 색상 팔레트 정확히 반영)
+const PALETTE = {
+  tealBlue:   0x2e779d, // 청록 블루 (주요 천)
+  navyBlue:   0x20354f, // 네이비 블루 (보조 천)
+  silver:     0xcbd4dc, // 실버 (갑옷)
+  lightSilver:0xe6eef4, // 밝은 실버 (검날/갑옷 하이라이트)
+  darkSilver: 0x73808c, // 어두운 실버 (관절/그리브 내측)
+  gold:       0xd6ab54, // 골드 (장식)
+  brightGold: 0xf4ce74, // 밝은 골드 (엠블럼/별)
+  brown:      0x6b442b, // 브라운 (머리카락)
+  darkBrown:  0x482c1b, // 어두운 브라운 (벨트/손잡이/부츠 가죽)
+  skin:       0xf5ceb0, // 피부톤
+  skinShadow: 0xe0b292, // 피부 음영
+  eyeDark:    0x241914, // 눈동자/눈썹
+  white:      0xf4f5f0, // 튜닉 흰 테두리
+  gemBlue:    0x45c8f5  // 검 가드 중앙 푸른 보석
+};
+
+// 플랫 셰이딩(로우폴리 각진 면) 재질 & 와이어프레임 오버레이 재질
+const flatMat = new THREE.MeshStandardMaterial({
+  vertexColors: true,
+  flatShading: true,
+  roughness: 0.72,
+  metalness: 0.18,
+  side: THREE.DoubleSide
 });
 
-const C = {
-  skin: 0xf2cea5,
-  hair: 0x7a4928,
-  blue: 0x2d7fa3,
-  navy: 0x1b4965,
-  silver: 0xd8e3e7,
-  darkSilver: 0x8fa3a8,
-  gold: 0xe8c166,
-  darkGold: 0x9c7a33,
-  white: 0xf7f5ed,
-  brown: 0x5c3a24,
-  black: 0x211c18,
-  capeOuter: 0x24628f,
-  capeInner: 0x184260,
-  shieldBlue: 0x235f85
-};
+const wireMat = new THREE.MeshBasicMaterial({
+  color: 0xc8e6ff,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.38
+});
+let showWireframe = false;
 
-const geomMap = {
-  box: new THREE.BoxGeometry(1, 1, 1),
-  ball: new THREE.SphereGeometry(1, 8, 6),
-  cyl: new THREE.CylinderGeometry(1, 1, 1, 8),
-  cone: new THREE.ConeGeometry(1, 1, 8),
-  rock: new THREE.DodecahedronGeometry(1, 0)
-};
+// 4. 도형 유틸리티: 파츠 생성 및 버텍스 컬러 입히기
+let partCount = 0;
+let triCount = 0;
 
-// 4. 고정밀 카일 캐릭터 파츠 빌더
-function buildKyleGeometry() {
-  const parts = [];
-  const add = (type, pos, scale, col, rot = [0,0,0]) => {
-    let g = geomMap[type].clone();
-    g.scale(scale[0], scale[1], scale[2]);
-    if(rot[0]) g.rotateX(rot[0]);
-    if(rot[1]) g.rotateY(rot[1]);
-    if(rot[2]) g.rotateZ(rot[2]);
-    g.translate(pos[0], pos[1], pos[2]);
-    
-    // 정점에 단색 버텍스 컬러 주입
-    const color = new THREE.Color(col);
-    const posAttr = g.attributes.position;
-    const colors = new Float32Array(posAttr.count * 3);
-    for(let i=0; i<posAttr.count; i++) {
-      colors[i*3] = color.r;
-      colors[i*3+1] = color.g;
-      colors[i*3+2] = color.b;
-    }
-    g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    parts.push(g);
-  };
-
-  // --- [1] 하체 및 부츠 ---
-  for(const s of [-1, 1]) {
-    const x = s * 0.13;
-    // 허벅지 및 종아리 갑옷 그리브
-    add('cyl', [x, 0.28, 0], [0.082, 0.32, 0.088], C.darkSilver);
-    add('box', [x, 0.44, 0.05], [0.09, 0.12, 0.05], C.gold); // 무릎 보호대
-    add('cyl', [x, 0.11, 0.01], [0.088, 0.22, 0.095], C.brown); // 부츠
-    add('box', [x, 0.03, 0.06], [0.11, 0.06, 0.22], C.black); // 발 부츠코
+function coloredMesh(geo, hexColor) {
+  const g = geo.index ? geo.toNonIndexed() : geo.clone();
+  g.computeVertexNormals();
+  const c = new THREE.Color(hexColor);
+  const count = g.attributes.position.count;
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
   }
+  g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  partCount++;
+  triCount += Math.round(count / 3);
 
-  // --- [2] 상체, 튜닉 및 흉갑(Breastplate) ---
-  add('cone', [0, 0.68, 0], [0.35, 0.42, 0.27], C.blue); // 하단 튜닉 스커트
-  add('box', [0, 0.62, 0.14], [0.18, 0.28, 0.04], C.white); // 전면 흰색 태바드
-  add('cyl', [0, 0.88, 0], [0.26, 0.32, 0.21], C.navy); // 허리 및 상체
-  add('cyl', [0, 0.77, 0], [0.27, 0.08, 0.22], C.brown); // 가죽 벨트
-  add('box', [0, 0.77, 0.21], [0.11, 0.09, 0.04], C.gold); // 벨트 버클
-
-  // 은빛 은장 흉갑 (입체적인 굴곡)
-  add('box', [0, 1.01, 0.08], [0.38, 0.3, 0.18], C.silver);
-  add('box', [0, 1.01, 0.175], [0.09, 0.24, 0.03], C.gold); // 가슴 중앙 골드 장식
-  // 흉갑 중앙 아르카 엠블럼 별
-  add('rock', [0, 1.01, 0.192], [0.045, 0.045, 0.025], C.gold);
-
-  // --- [3] 입체적인 망토 (클로크) ---
-  add('box', [0, 0.88, -0.21], [0.48, 0.64, 0.06], C.capeOuter, [0, 0, 0.12]);
-  for(const s of [-1, 1]) {
-    add('cone', [s*0.18, 0.82, -0.23], [0.17, 0.66, 0.08], C.capeInner, [0, 0, s*-0.12]);
-  }
-  add('torus', [0, 1.16, 0.02], [0.2, 0.18, 0.2], 0xc84646, [0, 0, Math.PI/2]); // 붉은 숄더 머플러
-
-  // --- [4] 어깨 견갑 (Pauldron) 및 양팔 ---
-  for(const s of [-1, 1]) {
-    const x = s * 0.34;
-    // 각진 어깨 갑옷
-    add('rock', [x, 1.11, 0], [0.16, 0.16, 0.16], C.silver);
-    add('box', [x, 1.06, 0], [0.18, 0.05, 0.18], C.gold);
-    // 팔
-    add('cyl', [x*1.04, 0.92, 0.02], [0.068, 0.24, 0.068], C.blue, [0, 0, s*0.12]);
-    add('cyl', [x*1.1, 0.72, 0.08], [0.072, 0.22, 0.072], C.silver, [0, 0, s*0.06]); // 건틀릿
-    add('ball', [x*1.14, 0.58, 0.12], [0.065, 0.065, 0.065], C.skin); // 손
-  }
-
-  // --- [5] 목 및 정밀 두상 & 헤어 스타일 ---
-  add('cyl', [0, 1.21, 0], [0.095, 0.1, 0.095], C.skin);
-  add('ball', [0, 1.42, 0], [0.26, 0.27, 0.25], C.skin); // 얼굴 베이스
-  add('cyl', [0, 1.33, 0.04], [0.21, 0.15, 0.19], C.skin); // 턱선 보강
-  
-  // 눈썹 및 눈
-  for(const s of [-1, 1]) {
-    add('ball', [s*0.09, 1.43, 0.22], [0.042, 0.052, 0.02], C.white);
-    add('ball', [s*0.09, 1.43, 0.235], [0.026, 0.035, 0.018], 0x1d3a4c);
-    add('box', [s*0.094, 1.5, 0.225], [0.07, 0.02, 0.02], C.hair, [0, 0, s*-0.12]);
-  }
-  // 코와 입
-  add('cone', [0, 1.39, 0.25], [0.025, 0.045, 0.03], C.skin, [Math.PI/2, 0, 0]);
-  add('box', [0, 1.3, 0.235], [0.065, 0.015, 0.015], 0xa36253);
-
-  // 컨셉트 아트와 일치하는 각진 로우폴리 갈색 머리 (앞머리 가르마 및 뒷머리 볼륨)
-  add('ball', [0, 1.53, -0.02], [0.28, 0.23, 0.27], C.hair);
-  add('box', [0, 1.45, -0.18], [0.46, 0.26, 0.16], C.hair);
-  add('box', [0, 1.55, 0.23], [0.32, 0.04, 0.04], C.gold); // 머리띠 서클릿
-  add('rock', [0, 1.55, 0.25], [0.045, 0.05, 0.025], 0x38e2ff);
-  add('cone', [-0.07, 1.6, 0.21], [0.075, 0.19, 0.06], C.hair, [0, 0, 2.7]);
-  add('cone', [0.08, 1.61, 0.2], [0.085, 0.21, 0.06], C.hair, [0, 0, -2.6]);
-  for(const s of [-1, 1]) add('cone', [s*0.24, 1.44, 0.12], [0.06, 0.22, 0.06], C.hair, [Math.PI, 0, s*0.15]);
-
-  // --- [6] 장비: 기사도의 검 & 카이트 실드 ---
-  // 검 (오른손)
-  add('cyl', [0.42, 0.62, 0.14], [0.038, 0.24, 0.038], C.brown);
-  add('ball', [0.42, 0.49, 0.14], [0.058, 0.058, 0.058], C.gold);
-  add('box', [0.42, 0.74, 0.14], [0.26, 0.055, 0.09], C.gold);
-  add('rock', [0.42, 0.74, 0.18], [0.048, 0.06, 0.03], 0x3ce2ff);
-  add('box', [0.42, 1.12, 0.14], [0.09, 0.7, 0.038], C.silver);
-  add('box', [0.42, 1.08, 0.165], [0.026, 0.54, 0.02], 0x76dcf7);
-  add('cone', [0.42, 1.54, 0.14], [0.065, 0.2, 0.032], C.silver);
-
-  // 카이트 실드 (왼손)
-  add('box', [-0.46, 0.82, 0.18], [0.38, 0.52, 0.06], C.gold);
-  add('box', [-0.46, 0.82, 0.21], [0.31, 0.45, 0.04], C.shieldBlue);
-  add('box', [-0.46, 0.82, 0.24], [0.06, 0.32, 0.02], C.gold);
-  add('box', [-0.46, 0.88, 0.24], [0.22, 0.06, 0.02], C.gold);
-
-  return mergeGeometries(parts, false);
+  const mesh = new THREE.Mesh(g, flatMat);
+  const wMesh = new THREE.Mesh(g, wireMat);
+  wMesh.visible = showWireframe;
+  wMesh.userData.isWire = true;
+  mesh.add(wMesh);
+  return mesh;
 }
 
-// 5. 씬에 카일 및 바닥/그리드 생성
-const kyleGeo = buildKyleGeometry();
-kyleGeo.computeVertexNormals();
-const kyleMesh = new THREE.Mesh(kyleGeo, sharedMat);
-kyleMesh.castShadow = true;
-kyleMesh.receiveShadow = true;
-scene.add(kyleMesh);
+function addPart(parent, geo, color, pos = [0,0,0], scale = [1,1,1], rot = [0,0,0]) {
+  const m = coloredMesh(geo, color);
+  m.position.set(pos[0], pos[1], pos[2]);
+  m.scale.set(scale[0], scale[1], scale[2]);
+  m.rotation.set(rot[0], rot[1], rot[2]);
+  parent.add(m);
+  return m;
+}
 
-// 은은한 마법진 바닥 패드
-const pad = new THREE.Mesh(
-  new THREE.RingGeometry(0.7, 0.82, 32),
-  new THREE.MeshBasicMaterial({ color: 0x56f2cb, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
-);
-pad.rotation.x = -Math.PI / 2;
-pad.position.y = 0.02;
-scene.add(pad);
+const G = {
+  box: new THREE.BoxGeometry(1, 1, 1),
+  cyl4: new THREE.CylinderGeometry(1, 1, 1, 4),
+  cyl6: new THREE.CylinderGeometry(1, 1, 1, 6),
+  cyl8: new THREE.CylinderGeometry(1, 1, 1, 8),
+  taper4: new THREE.CylinderGeometry(0.65, 1, 1, 4),
+  taper6: new THREE.CylinderGeometry(0.7, 1, 1, 6),
+  cone4: new THREE.ConeGeometry(1, 1, 4),
+  cone6: new THREE.ConeGeometry(1, 1, 6),
+  octa: new THREE.OctahedronGeometry(1, 0),
+  dodeca: new THREE.DodecahedronGeometry(1, 0),
+  icosa: new THREE.IcosahedronGeometry(1, 0)
+};
 
-const grid = new THREE.GridHelper(16, 16, 0x1f3c44, 0x182c33);
-grid.position.y = 0.01;
-scene.add(grid);
+// 4각 별 엠블럼 생성 함수 (가슴 갑옷, 방패, 망토 후면 공통)
+function addFourPointStar(parent, x, y, z, rx, ry, thickness, col) {
+  const star = new THREE.Group();
+  star.position.set(x, y, z);
+  addPart(star, G.octa, col, [0, 0, 0], [rx * 0.32, ry, thickness]);
+  addPart(star, G.octa, col, [0, 0, 0], [rx, ry * 0.32, thickness]);
+  addPart(star, G.octa, PALETTE.brightGold, [0, 0, thickness * 0.35], [rx * 0.28, ry * 0.28, thickness * 0.8]);
+  parent.add(star);
+  return star;
+}
 
-// 6. 애니메이션 루프 (미세한 숨쉬기 호흡 모션)
-let clock = new THREE.Clock();
-function animate() {
+// =========================================================
+// 5. 카일(Kyle) 7.5등신 관절형 정밀 조형 (컨셉트 아트 1:1 매칭)
+// =========================================================
+const kyleRoot = new THREE.Group();
+scene.add(kyleRoot);
+
+const joints = {};
+
+function buildKyleModel() {
+  // 바닥 원형 베이스 패드
+  const basePad = new THREE.Group();
+  addPart(basePad, new THREE.CylinderGeometry(1.15, 1.25, 0.08, 24), 0x263540, [0, -0.04, 0]);
+  addPart(basePad, new THREE.RingGeometry(0.98, 1.08, 6), PALETTE.gold, [0, 0.005, 0], [1,1,1], [-Math.PI/2, 0, 0]);
+  scene.add(basePad);
+
+  // 골반(Pelvis) & 허리 중심 그룹 (높이 Y = 1.62)
+  const pelvis = new THREE.Group();
+  pelvis.position.set(0, 1.62, 0);
+  kyleRoot.add(pelvis);
+  joints.pelvis = pelvis;
+
+  // ---------------------------------------------------
+  // [A] 상체 (Torso) & 은빛 흉갑 & 청록 튜닉 스커트
+  // ---------------------------------------------------
+  const torso = new THREE.Group();
+  pelvis.add(torso);
+  joints.torso = torso;
+
+  // 네이비/청록 언더 튜닉 몸통
+  addPart(torso, G.taper6, PALETTE.navyBlue, [0, 0.26, 0], [0.36, 0.52, 0.24], [0, Math.PI/6, 0]);
+  addPart(torso, G.box, PALETTE.tealBlue, [0, 0.12, 0], [0.46, 0.28, 0.31]);
+
+  // 가죽 벨트 & 금장 사각 버클 + 벨트 파우치
+  addPart(torso, G.cyl8, PALETTE.darkBrown, [0, 0.02, 0], [0.27, 0.11, 0.21]);
+  addPart(torso, G.box, PALETTE.gold, [0, 0.02, 0.205], [0.14, 0.13, 0.04]);
+  addPart(torso, G.box, PALETTE.darkBrown, [0, 0.02, 0.215], [0.08, 0.07, 0.03]);
+  for (const s of [-1, 1]) {
+    addPart(torso, G.box, PALETTE.gold, [s * 0.16, 0.02, 0.17], [0.04, 0.12, 0.04], [0, s * 0.4, 0]);
+  }
+  addPart(torso, G.box, PALETTE.darkBrown, [-0.25, -0.04, 0.12], [0.11, 0.14, 0.09], [0, 0, 0.15]);
+
+  // 4갈래로 나뉜 청록색 기사 튜닉 스커트 (흰색/골드 2중 테두리)
+  for (const s of [-1, 1]) {
+    // 전면 좌우 패널
+    const fp = new THREE.Group();
+    fp.position.set(s * 0.13, -0.04, 0.14);
+    fp.rotation.set(-0.12, 0, s * -0.08);
+    addPart(fp, G.box, PALETTE.gold, [0, -0.26, -0.01], [0.23, 0.54, 0.03]);
+    addPart(fp, G.box, PALETTE.white, [0, -0.25, 0.0], [0.20, 0.51, 0.032]);
+    addPart(fp, G.box, PALETTE.tealBlue, [0, -0.23, 0.01], [0.16, 0.46, 0.035]);
+    torso.add(fp);
+
+    // 측면/후면 패널
+    const sp = new THREE.Group();
+    sp.position.set(s * 0.22, -0.04, -0.02);
+    sp.rotation.set(0.08, 0, s * -0.18);
+    addPart(sp, G.box, PALETTE.gold, [0, -0.27, 0], [0.04, 0.54, 0.28]);
+    addPart(sp, G.box, PALETTE.navyBlue, [s * 0.01, -0.25, 0], [0.042, 0.49, 0.23]);
+    torso.add(sp);
+  }
+  // 전면 중앙 네이비 태바드
+  addPart(torso, G.box, PALETTE.navyBlue, [0, -0.22, 0.12], [0.12, 0.38, 0.04]);
+  addPart(torso, G.box, PALETTE.gold, [0, -0.39, 0.125], [0.12, 0.04, 0.042]);
+
+  // 은빛 흉갑 (Breastplate - 다면체 각진 조형 + 금장 림 + 중앙 4각 별 엠블럼)
+  addPart(torso, G.box, PALETTE.silver, [0, 0.42, 0.04], [0.52, 0.42, 0.30]);
+  // 가슴 전면 각진 장갑판 좌우
+  for (const s of [-1, 1]) {
+    addPart(torso, G.box, PALETTE.lightSilver, [s * 0.14, 0.44, 0.17], [0.26, 0.34, 0.10], [0.12, s * -0.22, s * -0.08]);
+    // 흉갑 상단 골드 칼라 테두리
+    addPart(torso, G.box, PALETTE.gold, [s * 0.15, 0.62, 0.12], [0.24, 0.06, 0.18], [0, s * -0.2, s * 0.18]);
+    // 복부 아래쪽 V자 은빛 장갑판
+    addPart(torso, G.box, PALETTE.silver, [s * 0.09, 0.21, 0.15], [0.18, 0.18, 0.08], [-0.15, 0, s * 0.25]);
+  }
+  // 흉갑 정중앙 수직 골드 라인 & 4각 별 엠블럼
+  addPart(torso, G.box, PALETTE.gold, [0, 0.39, 0.22], [0.05, 0.38, 0.04]);
+  addFourPointStar(torso, 0, 0.43, 0.24, 0.18, 0.22, 0.05, PALETTE.gold);
+
+  // 목 둘레 네이비/청록 스카프 칼라
+  addPart(torso, G.cyl6, PALETTE.tealBlue, [0, 0.66, 0], [0.22, 0.12, 0.20]);
+  addPart(torso, G.box, PALETTE.gold, [0, 0.63, 0.17], [0.22, 0.04, 0.08]);
+
+  // ---------------------------------------------------
+  // [B] 후면 푸른 망토 (Cape) & 황금 문양 엠블럼
+  // ---------------------------------------------------
+  const cape = new THREE.Group();
+  cape.position.set(0, 0.62, -0.16);
+  cape.rotation.x = 0.14;
+  torso.add(cape);
+  joints.cape = cape;
+
+  // 망토 상단 어깨 고정구
+  addPart(cape, G.box, PALETTE.tealBlue, [0, -0.04, 0], [0.56, 0.14, 0.08]);
+  // 망토 본체 (사다리꼴로 아래로 갈수록 넓어지는 다면체)
+  const capeGeo = new THREE.CylinderGeometry(0.28, 0.56, 1.58, 4, 1);
+  capeGeo.rotateY(Math.PI / 4);
+  capeGeo.scale(1.15, 1, 0.12);
+  addPart(cape, capeGeo, PALETTE.tealBlue, [0, -0.82, -0.05]);
+  // 망토 하단 골드 라인 테두리
+  addPart(cape, G.box, PALETTE.gold, [-0.18, -1.58, -0.06], [0.46, 0.05, 0.06], [0, 0, 0.08]);
+  addPart(cape, G.box, PALETTE.gold, [0.18, -1.58, -0.06], [0.46, 0.05, 0.06], [0, 0, -0.08]);
+
+  // 망토 후면 대형 황금 엠블럼 (컨셉트 아트의 다이아몬드 + 날개 창 문양)
+  const emblem = new THREE.Group();
+  emblem.position.set(0, -0.76, -0.105);
+  emblem.rotation.x = -0.08;
+  // 중앙 수직 창줄기
+  addPart(emblem, G.octa, PALETTE.brightGold, [0, 0.04, 0], [0.055, 0.36, 0.02]);
+  // 상단 다이아몬드 링
+  for (const s of [-1, 1]) {
+    addPart(emblem, G.box, PALETTE.brightGold, [s * 0.055, 0.24, 0], [0.13, 0.032, 0.02], [0, 0, s * 0.78]);
+    addPart(emblem, G.box, PALETTE.brightGold, [s * 0.055, 0.14, 0], [0.13, 0.032, 0.02], [0, 0, s * -0.78]);
+    // 좌우 날개 깃
+    addPart(emblem, G.octa, PALETTE.brightGold, [s * 0.14, -0.02, 0], [0.16, 0.05, 0.02], [0, 0, s * 0.45]);
+    addPart(emblem, G.octa, PALETTE.brightGold, [s * 0.11, -0.12, 0], [0.14, 0.038, 0.02], [0, 0, s * -0.65]);
+  }
+  cape.add(emblem);
+
+  // ---------------------------------------------------
+  // [C] 머리 (Head) & 로우폴리 스파이키 브라운 헤어
+  // ---------------------------------------------------
+  const head = new THREE.Group();
+  head.position.set(0, 0.74, 0.02);
+  torso.add(head);
+  joints.head = head;
+
+  // 목
+  addPart(head, G.cyl6, PALETTE.skinShadow, [0, 0.02, 0], [0.11, 0.16, 0.11]);
+  // 각진 로우폴리 두상 & 턱선
+  addPart(head, G.box, PALETTE.skin, [0, 0.26, 0.02], [0.34, 0.30, 0.32]);
+  addPart(head, G.cone4, PALETTE.skin, [0, 0.12, 0.03], [0.24, 0.18, 0.23], [Math.PI, Math.PI/4, 0]);
+  // 양쪽 귀
+  for (const s of [-1, 1]) {
+    addPart(head, G.box, PALETTE.skin, [s * 0.185, 0.24, 0.01], [0.05, 0.09, 0.06], [0, 0, s * -0.15]);
+  }
+  // 코 (오뚝한 로우폴리 삼각 프리즘)
+  addPart(head, G.cone4, PALETTE.skinShadow, [0, 0.23, 0.195], [0.035, 0.07, 0.05], [Math.PI/2, Math.PI/4, 0]);
+  // 입
+  addPart(head, G.box, 0xb57c68, [0, 0.15, 0.175], [0.07, 0.016, 0.02]);
+
+  // 늠름한 눈과 짙은 갈색 눈썹
+  for (const s of [-1, 1]) {
+    addPart(head, G.box, PALETTE.white, [s * 0.088, 0.255, 0.172], [0.075, 0.058, 0.02]);
+    addPart(head, G.box, PALETTE.eyeDark, [s * 0.085, 0.255, 0.18], [0.048, 0.055, 0.02]);
+    addPart(head, G.box, PALETTE.white, [s * 0.072, 0.268, 0.186], [0.018, 0.018, 0.015]); // 눈동자 하이라이트
+    addPart(head, G.box, PALETTE.darkBrown, [s * 0.09, 0.305, 0.18], [0.095, 0.024, 0.025], [0, 0, s * -0.16]);
+  }
+
+  // [로우폴리 스파이키 헤어 조형 - 정면/측면/후면 컨셉트 아트 완벽 반영]
+  const hairGrp = new THREE.Group();
+  head.add(hairGrp);
+  // 정수리 볼륨 베이스
+  addPart(hairGrp, G.dodeca, PALETTE.brown, [0, 0.36, -0.02], [0.23, 0.19, 0.23]);
+  addPart(hairGrp, G.box, PALETTE.brown, [0, 0.33, -0.10], [0.39, 0.26, 0.22]);
+
+  // 앞머리 스파이크 5가닥 (이마 위로 자연스럽게 갈라지는 겹침)
+  const frontSpikes = [
+    [0, 0.35, 0.18, 0.08, 0.22, 0.07, 2.75, 0, 0.08],
+    [-0.08, 0.36, 0.17, 0.085, 0.23, 0.07, 2.7, 0, 0.32],
+    [0.08, 0.36, 0.17, 0.085, 0.23, 0.07, 2.7, 0, -0.28],
+    [-0.15, 0.33, 0.14, 0.08, 0.22, 0.07, 2.8, 0, 0.52],
+    [0.15, 0.33, 0.14, 0.08, 0.22, 0.07, 2.8, 0, -0.48]
+  ];
+  for (const [x, y, z, sx, sy, sz, rx, ry, rz] of frontSpikes) {
+    addPart(hairGrp, G.cone4, PALETTE.brown, [x, y, z], [sx, sy, sz], [rx, ry, rz]);
+  }
+  // 양옆 구레나룻 & 측면 뻗침 머리
+  for (const s of [-1, 1]) {
+    addPart(hairGrp, G.cone4, PALETTE.brown, [s * 0.19, 0.24, 0.09], [0.065, 0.22, 0.07], [Math.PI, 0, s * 0.12]);
+    addPart(hairGrp, G.cone4, PALETTE.brown, [s * 0.22, 0.35, -0.02], [0.08, 0.22, 0.09], [0.2, 0, s * -1.1]);
+    addPart(hairGrp, G.cone4, PALETTE.brown, [s * 0.20, 0.27, -0.11], [0.08, 0.20, 0.08], [-0.4, 0, s * -0.85]);
+  }
+  // 정수리 바보털(아호게) & 뒷머리 레이어드 스파이크
+  addPart(hairGrp, G.cone4, PALETTE.brown, [-0.04, 0.51, 0.02], [0.065, 0.16, 0.06], [-0.3, 0, 0.45]);
+  addPart(hairGrp, G.cone4, PALETTE.brown, [0.06, 0.50, -0.03], [0.06, 0.14, 0.06], [-0.4, 0, -0.4]);
+  for (const x of [-0.11, 0, 0.11]) {
+    addPart(hairGrp, G.cone4, PALETTE.darkBrown, [x, 0.19, -0.19], [0.085, 0.21, 0.07], [-2.6, 0, x * -1.2]);
+  }
+
+  // ---------------------------------------------------
+  // [D] 양팔 & 다각형 어깨 갑옷(Pauldron) & 건틀릿
+  // ---------------------------------------------------
+  function buildArm(side) {
+    const s = side === 'right' ? -1 : 1; // 캐릭터 기준 오른팔은 화면 왼쪽(x < 0)
+    const shoulder = new THREE.Group();
+    shoulder.position.set(s * 0.34, 0.54, 0);
+    torso.add(shoulder);
+
+    // 컨셉트 아트의 다각형 은빛 어깨 견갑 + 굵은 골드 하단 테두리
+    const pauldron = new THREE.Group();
+    pauldron.position.set(s * 0.05, 0.05, 0);
+    pauldron.rotation.z = s * 0.22;
+    addPart(pauldron, G.box, PALETTE.navyBlue, [0, 0.09, 0], [0.22, 0.08, 0.24]);
+    addPart(pauldron, G.dodeca, PALETTE.silver, [s * 0.04, 0.02, 0], [0.16, 0.15, 0.17]);
+    addPart(pauldron, G.box, PALETTE.lightSilver, [s * 0.06, 0.03, 0], [0.24, 0.18, 0.26]);
+    addPart(pauldron, G.box, PALETTE.gold, [s * 0.07, -0.07, 0], [0.26, 0.055, 0.28]);
+    shoulder.add(pauldron);
+
+    // 상완 (네이비 소매 + 은빛 팔뚝 링)
+    addPart(shoulder, G.cyl6, PALETTE.navyBlue, [s * 0.04, -0.18, 0], [0.085, 0.28, 0.085]);
+    addPart(shoulder, G.cyl8, PALETTE.darkSilver, [s * 0.04, -0.31, 0], [0.092, 0.06, 0.092]);
+
+    // 팔꿈치 & 하완 건틀릿(Gauntlet)
+    const elbow = new THREE.Group();
+    elbow.position.set(s * 0.05, -0.34, 0);
+    shoulder.add(elbow);
+
+    addPart(elbow, G.taper6, PALETTE.silver, [0, -0.16, 0], [0.095, 0.28, 0.095]);
+    addPart(elbow, G.box, PALETTE.gold, [s * 0.05, -0.06, 0], [0.09, 0.05, 0.18]);
+    addPart(elbow, G.box, PALETTE.gold, [0, -0.28, 0], [0.16, 0.045, 0.16]);
+    // 장갑 낀 주먹
+    const hand = addPart(elbow, G.box, PALETTE.darkBrown, [0, -0.35, 0.02], [0.12, 0.12, 0.14]);
+    addPart(elbow, G.box, PALETTE.silver, [0, -0.34, 0.06], [0.125, 0.08, 0.08]);
+
+    joints[side + 'Shoulder'] = shoulder;
+    joints[side + 'Elbow'] = elbow;
+    joints[side + 'Hand'] = hand;
+  }
+  buildArm('right');
+  buildArm('left');
+
+  // ---------------------------------------------------
+  // [E] 무기: 기사도의 검 (오른손 장착)
+  // ---------------------------------------------------
+  const sword = new THREE.Group();
+  sword.position.set(0, -0.36, 0.06);
+  sword.rotation.set(Math.PI / 2.2, 0, 0);
+  joints.rightElbow.add(sword);
+  joints.sword = sword;
+
+  // 폼멜(자루 끝 골드 장식) & 브라운 그립
+  addPart(sword, G.octa, PALETTE.gold, [0, -0.22, 0], [0.065, 0.075, 0.065]);
+  addPart(sword, G.cyl6, PALETTE.darkBrown, [0, -0.07, 0], [0.036, 0.24, 0.036]);
+  for (const y of [-0.13, -0.07, -0.01]) {
+    addPart(sword, G.cyl6, PALETTE.gold, [0, y, 0], [0.04, 0.018, 0.04]);
+  }
+  // 황금 날개형 크로스 가드 + 중앙 푸른 다이아몬드 보석
+  addPart(sword, G.box, PALETTE.gold, [0, 0.07, 0], [0.34, 0.07, 0.09]);
+  for (const s of [-1, 1]) {
+    addPart(sword, G.cone4, PALETTE.gold, [s * 0.21, 0.09, 0], [0.055, 0.14, 0.055], [0, 0, s * -1.25]);
+  }
+  addPart(sword, G.octa, PALETTE.gemBlue, [0, 0.07, 0], [0.065, 0.085, 0.06]);
+  // 각진 은빛 양날 검신 (다이아몬드 단면)
+  addPart(sword, G.cyl4, PALETTE.lightSilver, [0, 0.56, 0], [0.085, 0.92, 0.028], [0, Math.PI/4, 0]);
+  addPart(sword, G.cyl4, PALETTE.silver, [0, 0.52, 0], [0.035, 0.78, 0.034], [0, Math.PI/4, 0]);
+  addPart(sword, G.cone4, PALETTE.lightSilver, [0, 1.13, 0], [0.085, 0.24, 0.028], [0, Math.PI/4, 0]);
+
+  // ---------------------------------------------------
+  // [F] 방패: 기사 방패 (왼팔 장착 - 육각 카이트 실드 + 대형 황금 십자성)
+  // ---------------------------------------------------
+  const shield = new THREE.Group();
+  shield.position.set(0.14, -0.18, 0.12);
+  shield.rotation.set(0.08, 0.45, -0.12);
+  joints.leftElbow.add(shield);
+  joints.shield = shield;
+
+  // 방패 상단(사다리꼴) + 하단(역삼각 콘) 결합으로 육각 카이트 실드 조형
+  addPart(shield, G.box, PALETTE.gold, [0, 0.18, 0], [0.62, 0.46, 0.06]);
+  addPart(shield, G.box, PALETTE.tealBlue, [0, 0.18, 0.018], [0.50, 0.38, 0.05]);
+
+  const lowerGold = new THREE.ConeGeometry(0.44, 0.62, 4);
+  lowerGold.rotateY(Math.PI / 4);
+  lowerGold.rotateZ(Math.PI);
+  addPart(shield, lowerGold, PALETTE.gold, [0, -0.35, 0], [1.0, 1.0, 0.14]);
+
+  const lowerBlue = new THREE.ConeGeometry(0.36, 0.52, 4);
+  lowerBlue.rotateY(Math.PI / 4);
+  lowerBlue.rotateZ(Math.PI);
+  addPart(shield, lowerBlue, PALETTE.tealBlue, [0, -0.31, 0.018], [1.0, 1.0, 0.14]);
+
+  // 방패 정중앙 대형 황금 4각 별 엠블럼
+  addFourPointStar(shield, 0, -0.02, 0.055, 0.44, 0.66, 0.06, PALETTE.brightGold);
+
+  // ---------------------------------------------------
+  // [G] 양다리 (허벅지 + 무릎 폴드 + 은빛 정강이 그리브 + 기사 철제 부츠)
+  // ---------------------------------------------------
+  function buildLeg(side) {
+    const s = side === 'right' ? -1 : 1;
+    const hip = new THREE.Group();
+    hip.position.set(s * 0.17, -0.06, 0);
+    pelvis.add(hip);
+
+    // 허벅지
+    addPart(hip, G.cyl6, PALETTE.navyBlue, [0, -0.32, 0], [0.115, 0.56, 0.115]);
+
+    // 무릎 관절 & 각진 무릎 보호대(Poleyn)
+    const knee = new THREE.Group();
+    knee.position.set(0, -0.62, 0);
+    hip.add(knee);
+
+    addPart(knee, G.octa, PALETTE.silver, [0, 0.02, 0.11], [0.11, 0.15, 0.08]);
+    addPart(knee, G.box, PALETTE.gold, [0, 0.09, 0.10], [0.16, 0.045, 0.10]);
+
+    // 정강이 은빛 그리브(Greaves) & 골드 림
+    addPart(knee, G.taper6, PALETTE.silver, [0, -0.34, 0], [0.115, 0.58, 0.12]);
+    addPart(knee, G.box, PALETTE.lightSilver, [0, -0.32, 0.09], [0.09, 0.48, 0.06]);
+    addPart(knee, G.box, PALETTE.gold, [0, -0.58, 0.02], [0.17, 0.05, 0.19]);
+
+    // 각진 철제 사바톤(기사 부츠)
+    const foot = new THREE.Group();
+    foot.position.set(0, -0.66, 0.04);
+    knee.add(foot);
+    addPart(foot, G.box, PALETTE.darkBrown, [0, -0.10, -0.06], [0.16, 0.14, 0.16]);
+    addPart(foot, G.box, PALETTE.silver, [0, -0.09, 0.06], [0.17, 0.13, 0.24], [0.12, 0, 0]);
+    addPart(foot, G.cone4, PALETTE.lightSilver, [0, -0.11, 0.21], [0.12, 0.14, 0.09], [Math.PI/2, Math.PI/4, 0]);
+
+    joints[side + 'Hip'] = hip;
+    joints[side + 'Knee'] = knee;
+  }
+  buildLeg('right');
+  buildLeg('left');
+
+  document.getElementById('polyInfo').textContent = `${partCount} 파츠 · ${triCount.toLocaleString()} 삼각형`;
+}
+
+buildKyleModel();
+
+// =========================================================
+// 6. 컨셉트 아트 하단 6종 포즈 & 5종 카메라 뷰 전환 시스템
+// =========================================================
+let currentPose = 'idle';
+let targetCamAngle = 0;
+let currentCamAngle = 0;
+let targetCamZoom = 1.0;
+let currentCamZoom = 1.0;
+let targetCamY = 1.55;
+let currentCamY = 1.55;
+
+function applyPose(pose, t) {
+  const breathe = Math.sin(t * 2.6) * 0.025;
+  // 기본 초기화
+  joints.pelvis.position.set(0, 1.62 + breathe, 0);
+  joints.pelvis.rotation.set(0, 0, 0);
+  joints.torso.rotation.set(0, 0, 0);
+  joints.head.rotation.set(0, 0, 0);
+  joints.cape.rotation.set(0.14 + Math.sin(t * 2.2) * 0.04, 0, 0);
+
+  if (pose === 'idle') {
+    // 턴어라운드 & 대기 자세
+    joints.rightShoulder.rotation.set(0.12, 0, -0.18);
+    joints.rightElbow.rotation.set(-0.35, 0, 0);
+    joints.leftShoulder.rotation.set(0.08, 0, 0.16);
+    joints.leftElbow.rotation.set(-0.28, 0, 0);
+    joints.rightHip.rotation.set(-0.05, 0, -0.06);
+    joints.rightKnee.rotation.set(0.08, 0, 0);
+    joints.leftHip.rotation.set(0.05, 0, 0.06);
+    joints.leftKnee.rotation.set(0.06, 0, 0);
+  } else if (pose === 'move') {
+    // 역동적인 질주 자세
+    const run = Math.sin(t * 7);
+    joints.pelvis.position.y = 1.56 + Math.abs(run) * 0.08;
+    joints.torso.rotation.set(0.28, run * 0.18, 0);
+    joints.head.rotation.set(-0.2, -run * 0.15, 0);
+    joints.cape.rotation.x = 0.55 + Math.abs(run) * 0.15;
+    joints.rightShoulder.rotation.set(-run * 0.65, 0, -0.22);
+    joints.rightElbow.rotation.set(-0.65, 0, 0);
+    joints.leftShoulder.rotation.set(run * 0.55, 0, 0.22);
+    joints.leftElbow.rotation.set(-0.55, 0, 0);
+    joints.rightHip.rotation.set(run * 0.7, 0, -0.04);
+    joints.rightKnee.rotation.set(Math.max(0.1, -run * 0.8), 0, 0);
+    joints.leftHip.rotation.set(-run * 0.7, 0, 0.04);
+    joints.leftKnee.rotation.set(Math.max(0.1, run * 0.8), 0, 0);
+  } else if (pose === 'slash') {
+    // 일반 공격 (전방 베기)
+    joints.torso.rotation.set(0.18, -0.42, 0);
+    joints.head.rotation.set(-0.1, 0.38, 0);
+    joints.rightShoulder.rotation.set(-0.85, -0.35, -0.55);
+    joints.rightElbow.rotation.set(-0.25, 0, 0);
+    joints.leftShoulder.rotation.set(0.35, 0.2, 0.35);
+    joints.leftElbow.rotation.set(-0.6, 0, 0);
+    joints.rightHip.rotation.set(-0.35, 0, -0.12);
+    joints.rightKnee.rotation.set(0.45, 0, 0);
+    joints.leftHip.rotation.set(0.32, 0, 0.12);
+    joints.leftKnee.rotation.set(0.15, 0, 0);
+  } else if (pose === 'skill') {
+    // 스킬 공격 (강력한 회전 참격)
+    joints.pelvis.position.y = 1.48;
+    joints.torso.rotation.set(0.32, 0.55, -0.12);
+    joints.head.rotation.set(-0.18, -0.48, 0);
+    joints.cape.rotation.set(0.62, -0.3, 0);
+    joints.rightShoulder.rotation.set(-1.15, 0.45, -0.85);
+    joints.rightElbow.rotation.set(-0.15, 0, 0);
+    joints.leftShoulder.rotation.set(0.45, -0.3, 0.45);
+    joints.leftElbow.rotation.set(-0.7, 0, 0);
+    joints.rightHip.rotation.set(0.45, 0, -0.18);
+    joints.rightKnee.rotation.set(0.25, 0, 0);
+    joints.leftHip.rotation.set(-0.55, 0, 0.18);
+    joints.leftKnee.rotation.set(0.75, 0, 0);
+  } else if (pose === 'guard') {
+    // 방어 (방패를 정면에 세운 수비 태세)
+    joints.pelvis.position.y = 1.50;
+    joints.torso.rotation.set(0.15, 0.35, 0);
+    joints.head.rotation.set(-0.08, -0.32, 0);
+    joints.leftShoulder.rotation.set(-0.55, -0.45, 0.25);
+    joints.leftElbow.rotation.set(-0.45, -0.35, 0);
+    joints.rightShoulder.rotation.set(0.35, 0, -0.35);
+    joints.rightElbow.rotation.set(-0.85, 0, 0);
+    joints.rightHip.rotation.set(0.28, 0, -0.12);
+    joints.rightKnee.rotation.set(0.35, 0, 0);
+    joints.leftHip.rotation.set(-0.35, 0, 0.12);
+    joints.leftKnee.rotation.set(0.55, 0, 0);
+  } else if (pose === 'victory') {
+    // 승리 (검을 하늘 높이 치켜든 포즈)
+    joints.torso.rotation.set(-0.12, -0.2, 0);
+    joints.head.rotation.set(-0.15, 0.15, 0);
+    joints.rightShoulder.rotation.set(-2.55, 0.15, -0.15);
+    joints.rightElbow.rotation.set(-0.15, 0, 0);
+    joints.leftShoulder.rotation.set(0.15, 0.2, 0.28);
+    joints.leftElbow.rotation.set(-0.4, 0, 0);
+    joints.rightHip.rotation.set(-0.08, 0, -0.08);
+    joints.leftHip.rotation.set(0.08, 0, 0.08);
+  }
+}
+
+// UI 이벤트 연결
+document.getElementById('wireBtn').addEventListener('click', e => {
+  showWireframe = !showWireframe;
+  e.target.textContent = showWireframe ? '와이어프레임 ON' : '와이어프레임 OFF';
+  e.target.classList.toggle('active', showWireframe);
+  kyleRoot.traverse(o => { if (o.userData.isWire) o.visible = showWireframe; });
+});
+
+document.querySelectorAll('#camBar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#camBar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.cam;
+    if (mode === 'front') { targetCamAngle = 0; targetCamZoom = 1.0; targetCamY = 1.55; }
+    else if (mode === 'quarter') { targetCamAngle = 0.58; targetCamZoom = 1.0; targetCamY = 1.55; }
+    else if (mode === 'side') { targetCamAngle = Math.PI / 2; targetCamZoom = 1.0; targetCamY = 1.55; }
+    else if (mode === 'back') { targetCamAngle = Math.PI; targetCamZoom = 1.0; targetCamY = 1.55; }
+    else if (mode === 'head') { targetCamAngle = 0.25; targetCamZoom = 2.15; targetCamY = 2.48; }
+  });
+});
+
+document.querySelectorAll('#poseBar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#poseBar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPose = btn.dataset.pose;
+  });
+});
+
+// 마우스/터치 드래그 회전 및 줌
+let dragging = false, prevX = 0, prevY = 0, pinchDist = 0;
+const pointers = new Map();
+
+canvas.addEventListener('pointerdown', e => {
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  dragging = true;
+  prevX = e.clientX;
+  prevY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+  if (pointers.size === 2) {
+    const pts = [...pointers.values()];
+    pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) {
+    const pts = [...pointers.values()];
+    const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    targetCamZoom = Math.max(0.65, Math.min(2.6, targetCamZoom * (d / Math.max(1, pinchDist))));
+    pinchDist = d;
+    return;
+  }
+  if (!dragging) return;
+  targetCamAngle -= (e.clientX - prevX) * 0.012;
+  targetCamY = Math.max(0.8, Math.min(2.7, targetCamY + (e.clientY - prevY) * 0.004));
+  prevX = e.clientX;
+  prevY = e.clientY;
+});
+
+canvas.addEventListener('pointerup', e => { pointers.delete(e.pointerId); if (!pointers.size) dragging = false; });
+canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); dragging = false; });
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  targetCamZoom = Math.max(0.65, Math.min(2.6, targetCamZoom - e.deltaY * 0.0012));
+}, { passive: false });
+
+function resize() {
+  const w = viewport.clientWidth, h = viewport.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+let startTime = performance.now();
+function animate(now) {
   requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
-  
-  // 자연스러운 상체 호흡 및 방패/검 미세 흔들림
-  kyleMesh.position.y = Math.sin(t * 2.2) * 0.025;
-  kyleMesh.rotation.y = Math.sin(t * 0.8) * 0.08;
-  
-  controls.update();
+  const t = (now - startTime) * 0.001;
+
+  currentCamAngle += (targetCamAngle - currentCamAngle) * 0.1;
+  currentCamZoom += (targetCamZoom - currentCamZoom) * 0.1;
+  currentCamY += (targetCamY - currentCamY) * 0.1;
+
+  const dist = 5.4 / currentCamZoom;
+  camera.position.set(
+    Math.sin(currentCamAngle) * dist,
+    currentCamY + 0.35 / currentCamZoom,
+    Math.cos(currentCamAngle) * dist
+  );
+  camera.lookAt(0, currentCamY, 0);
+
+  applyPose(currentPose, t);
   renderer.render(scene, camera);
 }
-animate();
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+requestAnimationFrame(animate);
 </script>
 </body>
 </html>
